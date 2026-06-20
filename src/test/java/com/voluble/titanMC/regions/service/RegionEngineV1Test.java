@@ -3,6 +3,7 @@ package com.voluble.titanMC.regions.service;
 import com.voluble.titanMC.regions.index.RegionIndexOptions;
 import com.voluble.titanMC.regions.index.RegionReadView;
 import com.voluble.titanMC.regions.model.BlockBox;
+import com.voluble.titanMC.regions.model.CuboidGeometry;
 import com.voluble.titanMC.regions.model.RegionDefinition;
 import com.voluble.titanMC.regions.model.RegionId;
 import com.voluble.titanMC.regions.model.RegionKey;
@@ -43,13 +44,13 @@ class RegionEngineV1Test {
 	void staleRevisionCannotOverwriteOrDeleteNewerState() throws Exception {
 		WorldId world = world();
 		try (RegionEngine engine = RegionEngine.open(temporaryDirectory.resolve("revision.db"))) {
-			RegionDefinition created = success(engine.create(key("alpha"), world, 1, List.of(box(0))).join());
+			RegionDefinition created = success(engine.create(key("alpha"), world, 1, geometry(0)).join());
 			RegionDefinition updated = success(engine.update(
-				created.id(), created.revision(), key("alpha"), world, 2, List.of(box(16))
+				created.id(), created.revision(), key("alpha"), world, 2, geometry(16)
 			).join());
 
 			RegionMutationResult.Failure staleUpdate = failure(engine.update(
-				created.id(), created.revision(), key("alpha"), world, 3, List.of(box(32))
+				created.id(), created.revision(), key("alpha"), world, 3, geometry(32)
 			).join());
 			RegionMutationResult.Failure staleDelete = failure(engine.delete(created.id(), created.revision()).join());
 
@@ -66,8 +67,8 @@ class RegionEngineV1Test {
 		WorldId world = world();
 		RegionId rejectedId;
 		try (RegionEngine engine = RegionEngine.open(database)) {
-			RegionDefinition existing = success(engine.create(key("existing"), world, 0, List.of(box(0))).join());
-			RegionDefinition rejected = RegionDefinition.create(key("rejected"), world, 0, List.of(box(32)));
+			RegionDefinition existing = success(engine.create(key("existing"), world, 0, geometry(0)).join());
+			RegionDefinition rejected = RegionDefinition.create(key("rejected"), world, 0, geometry(32));
 			rejectedId = rejected.id();
 			RegionMutationBatch batch = RegionMutationBatch.builder()
 				.create(rejected)
@@ -94,13 +95,13 @@ class RegionEngineV1Test {
 		RegionId firstId;
 		RegionId secondId;
 		try (RegionEngine engine = RegionEngine.open(database)) {
-			RegionDefinition first = success(engine.create(key("first"), world, 0, List.of(box(0))).join());
-			RegionDefinition second = success(engine.create(key("second"), world, 0, List.of(box(32))).join());
+			RegionDefinition first = success(engine.create(key("first"), world, 0, geometry(0)).join());
+			RegionDefinition second = success(engine.create(key("second"), world, 0, geometry(32)).join());
 			firstId = first.id();
 			secondId = second.id();
 			RegionMutationBatch swap = RegionMutationBatch.builder()
-				.update(first.id(), first.revision(), key("second"), world, 0, List.of(box(0)))
-				.update(second.id(), second.revision(), key("first"), world, 0, List.of(box(32)))
+				.update(first.id(), first.revision(), key("second"), world, 0, geometry(0))
+				.update(second.id(), second.revision(), key("first"), world, 0, geometry(32))
 				.build();
 
 			assertInstanceOf(RegionBatchResult.Success.class, engine.submit(swap).join());
@@ -118,10 +119,10 @@ class RegionEngineV1Test {
 	void readViewRemainsPinnedAfterNewSnapshotsArePublished() throws Exception {
 		WorldId world = world();
 		try (RegionEngine engine = RegionEngine.open(temporaryDirectory.resolve("view.db"))) {
-			RegionDefinition first = success(engine.create(key("first"), world, 0, List.of(box(0))).join());
+			RegionDefinition first = success(engine.create(key("first"), world, 0, geometry(0)).join());
 			RegionReadView pinned = engine.readView();
 			long pinnedVersion = pinned.version();
-			RegionDefinition second = success(engine.create(key("second"), world, 0, List.of(box(32))).join());
+			RegionDefinition second = success(engine.create(key("second"), world, 0, geometry(32)).join());
 
 			assertEquals(first, pinned.find(first.id()));
 			assertNull(pinned.find(second.id()));
@@ -137,10 +138,10 @@ class RegionEngineV1Test {
 		RegionRuntimeOptions options = new RegionRuntimeOptions(RegionIndexOptions.defaults(), 1, Duration.ofSeconds(2));
 		WorldId world = world();
 		try (RegionEngine engine = RegionEngine.open(repository, options)) {
-			var running = engine.create(key("running"), world, 0, List.of(box(0)));
+			var running = engine.create(key("running"), world, 0, geometry(0));
 			assertTrue(repository.saveEntered.await(2, TimeUnit.SECONDS));
-			var queued = engine.create(key("queued"), world, 0, List.of(box(32)));
-			RegionMutationResult.Failure rejected = failure(engine.create(key("rejected"), world, 0, List.of(box(64))).join());
+			var queued = engine.create(key("queued"), world, 0, geometry(32));
+			RegionMutationResult.Failure rejected = failure(engine.create(key("rejected"), world, 0, geometry(64)).join());
 
 			assertEquals(RegionMutationResult.Reason.QUEUE_FULL, rejected.reason());
 			assertEquals(1, engine.stats().queuedMutations());
@@ -154,8 +155,8 @@ class RegionEngineV1Test {
 	void storageAndUnexpectedRepositoryFailuresMakeEngineFailClosed() throws Exception {
 		FailingRepository sqlFailure = new FailingRepository(new SQLException("disk unavailable"));
 		try (RegionEngine engine = RegionEngine.open(sqlFailure, RegionIndexOptions.defaults())) {
-			RegionMutationResult.Failure first = failure(engine.create(key("first"), world(), 0, List.of(box(0))).join());
-			RegionMutationResult.Failure second = failure(engine.create(key("second"), world(), 0, List.of(box(32))).join());
+			RegionMutationResult.Failure first = failure(engine.create(key("first"), world(), 0, geometry(0)).join());
+			RegionMutationResult.Failure second = failure(engine.create(key("second"), world(), 0, geometry(32)).join());
 			assertEquals(RegionMutationResult.Reason.STORAGE_FAILURE, first.reason());
 			assertEquals(RegionEngineHealth.FAILED, engine.health());
 			assertEquals(RegionMutationResult.Reason.ENGINE_UNHEALTHY, second.reason());
@@ -163,7 +164,7 @@ class RegionEngineV1Test {
 
 		FailingRepository runtimeFailure = new FailingRepository(new IllegalStateException("repository bug"));
 		try (RegionEngine engine = RegionEngine.open(runtimeFailure, RegionIndexOptions.defaults())) {
-			RegionMutationResult.Failure result = failure(engine.create(key("first"), world(), 0, List.of(box(0))).join());
+			RegionMutationResult.Failure result = failure(engine.create(key("first"), world(), 0, geometry(0)).join());
 			assertEquals(RegionMutationResult.Reason.INTERNAL_CONFLICT, result.reason());
 			assertEquals(RegionEngineHealth.FAILED, engine.health());
 		}
@@ -185,8 +186,8 @@ class RegionEngineV1Test {
 	void extremePrioritiesRetainDeterministicOrder() throws Exception {
 		WorldId world = world();
 		try (RegionEngine engine = RegionEngine.open(temporaryDirectory.resolve("priorities.db"))) {
-			RegionDefinition lowest = success(engine.create(key("lowest"), world, Integer.MIN_VALUE, List.of(box(0))).join());
-			RegionDefinition highest = success(engine.create(key("highest"), world, Integer.MAX_VALUE, List.of(box(0))).join());
+			RegionDefinition lowest = success(engine.create(key("lowest"), world, Integer.MIN_VALUE, geometry(0)).join());
+			RegionDefinition highest = success(engine.create(key("highest"), world, Integer.MAX_VALUE, geometry(0)).join());
 			assertEquals(List.of(highest, lowest), engine.findAll(world, 1, 1, 1));
 		}
 	}
@@ -209,6 +210,10 @@ class RegionEngineV1Test {
 
 	private static BlockBox box(int x) {
 		return new BlockBox(x, 0, 0, x + 16, 16, 16);
+	}
+
+	private static CuboidGeometry geometry(int x) {
+		return new CuboidGeometry(box(x));
 	}
 
 	private static class MemoryRepository implements RegionRepository {

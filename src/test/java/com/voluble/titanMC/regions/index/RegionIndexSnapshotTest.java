@@ -1,6 +1,7 @@
 package com.voluble.titanMC.regions.index;
 
 import com.voluble.titanMC.regions.model.BlockBox;
+import com.voluble.titanMC.regions.model.CuboidGeometry;
 import com.voluble.titanMC.regions.model.RegionDefinition;
 import com.voluble.titanMC.regions.model.RegionId;
 import com.voluble.titanMC.regions.model.RegionKey;
@@ -90,7 +91,7 @@ class RegionIndexSnapshotTest {
 			RegionKey.of("test", name),
 			world,
 			priority,
-			List.of(box),
+			new CuboidGeometry(box),
 			Instant.EPOCH,
 			Instant.EPOCH
 		);

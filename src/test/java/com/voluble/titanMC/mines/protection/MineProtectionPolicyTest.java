@@ -2,6 +2,7 @@ package com.voluble.titanMC.mines.protection;
 
 import com.voluble.titanMC.regions.model.BlockBox;
 import com.voluble.titanMC.regions.model.BlockPosition;
+import com.voluble.titanMC.regions.model.CuboidGeometry;
 import com.voluble.titanMC.regions.model.RegionDefinition;
 import com.voluble.titanMC.regions.model.RegionId;
 import com.voluble.titanMC.regions.model.RegionKey;
@@ -13,7 +14,6 @@ import com.voluble.titanMC.regions.protection.model.ProtectionRequest;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
-import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -29,7 +29,7 @@ class MineProtectionPolicyTest {
 		RegionKey.of(MineProtectionPolicy.NAMESPACE, "alpha"),
 		WORLD,
 		100,
-		List.of(new BlockBox(0, 0, 0, 16, 16, 16)),
+		new CuboidGeometry(new BlockBox(0, 0, 0, 16, 16, 16)),
 		Instant.EPOCH,
 		Instant.EPOCH
 	);

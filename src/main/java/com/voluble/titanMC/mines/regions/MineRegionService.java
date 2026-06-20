@@ -3,6 +3,7 @@ package com.voluble.titanMC.mines.regions;
 import com.voluble.titanMC.mines.Mine;
 import com.voluble.titanMC.mines.protection.MineProtectionPolicy;
 import com.voluble.titanMC.regions.model.BlockBox;
+import com.voluble.titanMC.regions.model.CuboidGeometry;
 import com.voluble.titanMC.regions.model.RegionDefinition;
 import com.voluble.titanMC.regions.model.RegionKey;
 import com.voluble.titanMC.regions.model.WorldId;
@@ -76,7 +77,7 @@ public final class MineRegionService {
 			key(mine.getName()),
 			world(mine.getCuboid()),
 			PRIORITY,
-			List.of(box(mine.getCuboid()))
+			geometry(mine.getCuboid())
 		).join());
 	}
 
@@ -93,7 +94,7 @@ public final class MineRegionService {
 			existing.key(),
 			world(newCuboid),
 			PRIORITY,
-			List.of(box(newCuboid))
+			geometry(newCuboid)
 		).join());
 	}
 
@@ -148,7 +149,7 @@ public final class MineRegionService {
 			existing.key(),
 			world(cuboid),
 			PRIORITY,
-			List.of(box(cuboid))
+			geometry(cuboid)
 		);
 	}
 
@@ -157,14 +158,14 @@ public final class MineRegionService {
 			key(mine.getName()),
 			world(mine.getCuboid()),
 			PRIORITY,
-			List.of(box(mine.getCuboid()))
+			geometry(mine.getCuboid())
 		);
 	}
 
 	private static boolean matches(RegionDefinition region, RegionUtils.Cuboid cuboid) {
 		return region.worldId().equals(world(cuboid))
 			&& region.priority() == PRIORITY
-			&& region.boxes().equals(List.of(box(cuboid)));
+			&& region.geometry().equals(geometry(cuboid));
 	}
 
 	private static RegionKey key(String mineName) {
@@ -184,6 +185,10 @@ public final class MineRegionService {
 			cuboid.minX, cuboid.minY, cuboid.minZ,
 			cuboid.maxX, cuboid.maxY, cuboid.maxZ
 		);
+	}
+
+	private static CuboidGeometry geometry(RegionUtils.Cuboid cuboid) {
+		return new CuboidGeometry(box(cuboid));
 	}
 
 	private static void requireSuccess(String operation, RegionMutationResult result) {

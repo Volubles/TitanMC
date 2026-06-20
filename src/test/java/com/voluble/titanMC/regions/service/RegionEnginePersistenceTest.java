@@ -1,6 +1,7 @@
 package com.voluble.titanMC.regions.service;
 
 import com.voluble.titanMC.regions.model.BlockBox;
+import com.voluble.titanMC.regions.model.CuboidGeometry;
 import com.voluble.titanMC.regions.model.RegionDefinition;
 import com.voluble.titanMC.regions.model.RegionKey;
 import com.voluble.titanMC.regions.model.WorldId;
@@ -34,7 +35,7 @@ class RegionEnginePersistenceTest {
 					RegionKey.of("cell", "cell_" + index),
 					world,
 					index % 5,
-					List.of(new BlockBox(index * 32, 0, 0, index * 32 + 16, 16, 16))
+					new CuboidGeometry(new BlockBox(index * 32, 0, 0, index * 32 + 16, 16, 16))
 				));
 			}
 			CompletableFuture.allOf(writes.toArray(CompletableFuture[]::new)).join();
@@ -55,8 +56,8 @@ class RegionEnginePersistenceTest {
 		RegionKey key = RegionKey.of("cell", "alpha");
 
 		try (RegionEngine engine = RegionEngine.open(database)) {
-			RegionMutationResult first = engine.create(key, world, 0, List.of(new BlockBox(0, 0, 0, 16, 16, 16))).join();
-			RegionMutationResult duplicate = engine.create(key, world, 0, List.of(new BlockBox(32, 0, 0, 48, 16, 16))).join();
+			RegionMutationResult first = engine.create(key, world, 0, new CuboidGeometry(new BlockBox(0, 0, 0, 16, 16, 16))).join();
+			RegionMutationResult duplicate = engine.create(key, world, 0, new CuboidGeometry(new BlockBox(32, 0, 0, 48, 16, 16))).join();
 			assertInstanceOf(RegionMutationResult.Success.class, first);
 			RegionMutationResult.Failure failure = assertInstanceOf(RegionMutationResult.Failure.class, duplicate);
 			assertEquals(RegionMutationResult.Reason.DUPLICATE_KEY, failure.reason());
@@ -66,7 +67,7 @@ class RegionEnginePersistenceTest {
 		try (RegionEngine reloaded = RegionEngine.open(database)) {
 			assertEquals(1, reloaded.snapshot().definitions().size());
 			RegionDefinition stored = reloaded.find(world, key);
-			assertEquals(new BlockBox(0, 0, 0, 16, 16, 16), stored.boxes().getFirst());
+			assertEquals(new CuboidGeometry(new BlockBox(0, 0, 0, 16, 16, 16)), stored.geometry());
 		}
 	}
 }

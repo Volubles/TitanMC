@@ -67,30 +67,26 @@ public final class RegionIndexSnapshot {
 			if (byKey.putIfAbsent(scopedKey, definition.id()) != null) {
 				throw new RegionIndexBuildException("duplicate region key in world: " + definition.key());
 			}
-			if (definition.boxes().size() > options.maxBoxesPerRegion()) {
-				throw new RegionIndexBuildException("region exceeds box limit: " + definition.key());
+			if (definition.geometry().complexity() > options.maxGeometryComplexity()) {
+				throw new RegionIndexBuildException("region geometry is too complex: " + definition.key());
 			}
 
 			Set<Long> regionChunks = new LinkedHashSet<>();
-			for (BlockBox box : definition.boxes()) {
-				long width = (long) box.maxChunkX() - box.minChunkX() + 1L;
-				long depth = (long) box.maxChunkZ() - box.minChunkZ() + 1L;
-				long boxChunks;
-				try {
-					boxChunks = Math.multiplyExact(width, depth);
-				} catch (ArithmeticException exception) {
-					throw new RegionIndexBuildException("region chunk span overflow: " + definition.key());
-				}
-				if (boxChunks > options.maxChunksPerRegion()) {
-					throw new RegionIndexBuildException("region exceeds chunk limit: " + definition.key());
-				}
-				for (int chunkX = box.minChunkX(); chunkX <= box.maxChunkX(); chunkX++) {
-					for (int chunkZ = box.minChunkZ(); chunkZ <= box.maxChunkZ(); chunkZ++) {
-						regionChunks.add(chunkKey(chunkX, chunkZ));
-					}
-				}
-				if (regionChunks.size() > options.maxChunksPerRegion()) {
-					throw new RegionIndexBuildException("region exceeds chunk limit: " + definition.key());
+			BlockBox bounds = definition.geometry().bounds();
+			long width = (long) bounds.maxChunkX() - bounds.minChunkX() + 1L;
+			long depth = (long) bounds.maxChunkZ() - bounds.minChunkZ() + 1L;
+			long geometryChunks;
+			try {
+				geometryChunks = Math.multiplyExact(width, depth);
+			} catch (ArithmeticException exception) {
+				throw new RegionIndexBuildException("region chunk span overflow: " + definition.key());
+			}
+			if (geometryChunks > options.maxChunksPerRegion()) {
+				throw new RegionIndexBuildException("region exceeds chunk limit: " + definition.key());
+			}
+			for (int chunkX = bounds.minChunkX(); chunkX <= bounds.maxChunkX(); chunkX++) {
+				for (int chunkZ = bounds.minChunkZ(); chunkZ <= bounds.maxChunkZ(); chunkZ++) {
+					regionChunks.add(chunkKey(chunkX, chunkZ));
 				}
 			}
 			totalEntries += regionChunks.size();

@@ -4,6 +4,7 @@ import com.voluble.titanMC.regions.index.RegionIndexOptions;
 import com.voluble.titanMC.regions.index.RegionIndexSnapshot;
 import com.voluble.titanMC.regions.model.BlockBox;
 import com.voluble.titanMC.regions.model.BlockPosition;
+import com.voluble.titanMC.regions.model.CuboidGeometry;
 import com.voluble.titanMC.regions.model.RegionDefinition;
 import com.voluble.titanMC.regions.model.RegionId;
 import com.voluble.titanMC.regions.model.RegionKey;
@@ -242,7 +243,7 @@ class ProtectionServiceTest {
 			RegionKey.of(namespace, name),
 			WORLD,
 			priority,
-			List.of(new BlockBox(0, 0, 0, 16, 16, 16)),
+			new CuboidGeometry(new BlockBox(0, 0, 0, 16, 16, 16)),
 			Instant.EPOCH,
 			Instant.EPOCH
 		);

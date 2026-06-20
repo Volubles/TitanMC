@@ -1,9 +1,9 @@
 package com.voluble.titanMC.regions.index;
 
-public record RegionIndexOptions(int maxBoxesPerRegion, long maxChunksPerRegion, long maxTotalChunkEntries) {
+public record RegionIndexOptions(int maxGeometryComplexity, long maxChunksPerRegion, long maxTotalChunkEntries) {
 
 	public RegionIndexOptions {
-		if (maxBoxesPerRegion <= 0) throw new IllegalArgumentException("maxBoxesPerRegion must be positive");
+		if (maxGeometryComplexity <= 0) throw new IllegalArgumentException("maxGeometryComplexity must be positive");
 		if (maxChunksPerRegion <= 0) throw new IllegalArgumentException("maxChunksPerRegion must be positive");
 		if (maxTotalChunkEntries <= 0) throw new IllegalArgumentException("maxTotalChunkEntries must be positive");
 	}

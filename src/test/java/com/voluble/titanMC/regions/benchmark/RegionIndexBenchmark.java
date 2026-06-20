@@ -3,6 +3,7 @@ package com.voluble.titanMC.regions.benchmark;
 import com.voluble.titanMC.regions.index.RegionIndexOptions;
 import com.voluble.titanMC.regions.index.RegionIndexSnapshot;
 import com.voluble.titanMC.regions.model.BlockBox;
+import com.voluble.titanMC.regions.model.CuboidGeometry;
 import com.voluble.titanMC.regions.model.RegionDefinition;
 import com.voluble.titanMC.regions.model.RegionId;
 import com.voluble.titanMC.regions.model.RegionKey;
@@ -29,7 +30,7 @@ public final class RegionIndexBenchmark {
 				RegionKey.of("benchmark", "r_" + index),
 				world,
 				index % 10,
-				List.of(new BlockBox(gridX * 32, -64, gridZ * 32, gridX * 32 + 16, 320, gridZ * 32 + 16)),
+				new CuboidGeometry(new BlockBox(gridX * 32, -64, gridZ * 32, gridX * 32 + 16, 320, gridZ * 32 + 16)),
 				Instant.EPOCH,
 				Instant.EPOCH
 			));

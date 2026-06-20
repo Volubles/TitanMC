@@ -3,6 +3,7 @@ package com.voluble.titanMC.mines.regions;
 import com.voluble.titanMC.mines.Mine;
 import com.voluble.titanMC.mines.WeightedPalette;
 import com.voluble.titanMC.regions.model.BlockBox;
+import com.voluble.titanMC.regions.model.CuboidGeometry;
 import com.voluble.titanMC.regions.model.RegionDefinition;
 import com.voluble.titanMC.regions.model.RegionKey;
 import com.voluble.titanMC.regions.model.WorldId;
@@ -56,11 +57,11 @@ class MineRegionServiceTest {
 		try (RegionEngine engine = RegionEngine.open(temporaryDirectory.resolve("stale.db"))) {
 			engine.create(
 				RegionKey.of("mine", "stale"), world, MineRegionService.PRIORITY,
-				List.of(BlockBox.inclusive(0, 0, 0, 5, 5, 5))
+				new CuboidGeometry(BlockBox.inclusive(0, 0, 0, 5, 5, 5))
 			).join();
 			engine.create(
 				RegionKey.of("cell", "keep"), world, 200,
-				List.of(BlockBox.inclusive(10, 0, 10, 15, 5, 15))
+				new CuboidGeometry(BlockBox.inclusive(10, 0, 10, 15, 5, 15))
 			).join();
 
 			new MineRegionService(engine).reconcile(List.of());
@@ -89,14 +90,14 @@ class MineRegionServiceTest {
 			RegionKey.of("mine", mine.getName())
 		);
 		assertEquals(MineRegionService.PRIORITY, region.priority());
-		assertEquals(List.of(BlockBox.inclusive(
+		assertEquals(new CuboidGeometry(BlockBox.inclusive(
 			mine.getCuboid().minX,
 			mine.getCuboid().minY,
 			mine.getCuboid().minZ,
 			mine.getCuboid().maxX,
 			mine.getCuboid().maxY,
 			mine.getCuboid().maxZ
-		)), region.boxes());
+		)), region.geometry());
 	}
 
 	private static Mine mine(String name, RegionUtils.Cuboid cuboid) {

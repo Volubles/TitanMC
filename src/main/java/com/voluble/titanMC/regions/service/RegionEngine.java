@@ -7,6 +7,7 @@ import com.voluble.titanMC.regions.index.RegionIndexSnapshot;
 import com.voluble.titanMC.regions.index.RegionReadView;
 import com.voluble.titanMC.regions.model.BlockBox;
 import com.voluble.titanMC.regions.model.RegionDefinition;
+import com.voluble.titanMC.regions.model.RegionGeometry;
 import com.voluble.titanMC.regions.model.RegionId;
 import com.voluble.titanMC.regions.model.RegionKey;
 import com.voluble.titanMC.regions.model.WorldId;
@@ -18,7 +19,6 @@ import java.nio.file.Path;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -126,11 +126,11 @@ public final class RegionEngine implements AutoCloseable {
 		RegionKey key,
 		WorldId worldId,
 		int priority,
-		Collection<BlockBox> boxes
+		RegionGeometry geometry
 	) {
 		RegionDefinition definition;
 		try {
-			definition = RegionDefinition.create(key, worldId, priority, List.copyOf(boxes));
+			definition = RegionDefinition.create(key, worldId, priority, geometry);
 		} catch (RuntimeException exception) {
 			return CompletableFuture.completedFuture(new RegionMutationResult.Failure(
 				RegionMutationResult.Reason.INVALID_GEOMETRY, exception.getMessage()
@@ -145,7 +145,7 @@ public final class RegionEngine implements AutoCloseable {
 		RegionKey key,
 		WorldId worldId,
 		int priority,
-		Collection<BlockBox> boxes
+		RegionGeometry geometry
 	) {
 		return submit(() -> {
 			RegionDefinition existing = index.find(id);
@@ -157,7 +157,7 @@ public final class RegionEngine implements AutoCloseable {
 			RegionDefinition updated;
 			try {
 				updated = new RegionDefinition(
-					id, key, worldId, priority, List.copyOf(boxes), existing.createdAt(), Instant.now(), existing.revision() + 1L
+					id, key, worldId, priority, geometry, existing.createdAt(), Instant.now(), existing.revision() + 1L
 				);
 			} catch (RuntimeException exception) {
 				return failure(RegionMutationResult.Reason.INVALID_GEOMETRY, exception.getMessage());
@@ -230,7 +230,7 @@ public final class RegionEngine implements AutoCloseable {
 				RegionDefinition updated;
 				try {
 					updated = new RegionDefinition(
-						existing.id(), update.key(), update.worldId(), update.priority(), update.boxes(),
+						existing.id(), update.key(), update.worldId(), update.priority(), update.geometry(),
 						existing.createdAt(), timestamp, existing.revision() + 1L
 					);
 				} catch (RuntimeException exception) {

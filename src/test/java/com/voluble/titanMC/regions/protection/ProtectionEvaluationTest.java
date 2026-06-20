@@ -2,6 +2,7 @@ package com.voluble.titanMC.regions.protection;
 
 import com.voluble.titanMC.regions.model.BlockBox;
 import com.voluble.titanMC.regions.model.BlockPosition;
+import com.voluble.titanMC.regions.model.CuboidGeometry;
 import com.voluble.titanMC.regions.model.RegionDefinition;
 import com.voluble.titanMC.regions.model.RegionId;
 import com.voluble.titanMC.regions.model.RegionKey;
@@ -71,7 +72,7 @@ class ProtectionEvaluationTest {
 	private static ProtectionService service(RegionProtectionPolicy policy) {
 		RegionDefinition region = new RegionDefinition(
 			new RegionId(new UUID(5L, 3L)), RegionKey.of("cell", "alpha"), WORLD, 200,
-			List.of(new BlockBox(0, 0, 0, 16, 16, 16)), Instant.EPOCH, Instant.EPOCH
+			new CuboidGeometry(new BlockBox(0, 0, 0, 16, 16, 16)), Instant.EPOCH, Instant.EPOCH
 		);
 		RegionPolicyRegistry registry = RegionPolicyRegistry.builder().register(policy).build();
 		return new ProtectionService(

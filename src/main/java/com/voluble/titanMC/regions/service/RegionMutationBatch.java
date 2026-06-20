@@ -1,7 +1,7 @@
 package com.voluble.titanMC.regions.service;
 
-import com.voluble.titanMC.regions.model.BlockBox;
 import com.voluble.titanMC.regions.model.RegionDefinition;
+import com.voluble.titanMC.regions.model.RegionGeometry;
 import com.voluble.titanMC.regions.model.RegionId;
 import com.voluble.titanMC.regions.model.RegionKey;
 import com.voluble.titanMC.regions.model.WorldId;
@@ -36,13 +36,13 @@ public record RegionMutationBatch(List<Operation> operations) {
 		RegionKey key,
 		WorldId worldId,
 		int priority,
-		List<BlockBox> boxes
+		RegionGeometry geometry
 	) implements Operation {
 		public Update {
 			Objects.requireNonNull(id, "id");
 			Objects.requireNonNull(key, "key");
 			Objects.requireNonNull(worldId, "worldId");
-			boxes = List.copyOf(boxes);
+			Objects.requireNonNull(geometry, "geometry");
 			if (expectedRevision < 1L) throw new IllegalArgumentException("expectedRevision must be positive");
 		}
 	}
@@ -68,9 +68,9 @@ public record RegionMutationBatch(List<Operation> operations) {
 			RegionKey key,
 			WorldId worldId,
 			int priority,
-			List<BlockBox> boxes
+			RegionGeometry geometry
 		) {
-			operations.add(new Update(id, expectedRevision, key, worldId, priority, boxes));
+			operations.add(new Update(id, expectedRevision, key, worldId, priority, geometry));
 			return this;
 		}
 

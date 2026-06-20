@@ -1,7 +1,9 @@
 package com.voluble.titanMC.regions.persistence;
 
 import com.voluble.titanMC.regions.model.BlockBox;
+import com.voluble.titanMC.regions.model.CuboidGeometry;
 import com.voluble.titanMC.regions.model.RegionDefinition;
+import com.voluble.titanMC.regions.model.RegionGeometry;
 import com.voluble.titanMC.regions.model.RegionId;
 import com.voluble.titanMC.regions.model.RegionKey;
 import com.voluble.titanMC.regions.model.WorldId;
@@ -16,14 +18,12 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 public final class SqliteRegionRepository implements RegionRepository {
 
-	private static final int SCHEMA_VERSION = 2;
+	private static final int SCHEMA_VERSION = 3;
 	private final Path databasePath;
 	private Connection connection;
 
@@ -103,20 +103,17 @@ public final class SqliteRegionRepository implements RegionRepository {
 					)
 					""");
 				statement.executeUpdate("""
-					CREATE TABLE IF NOT EXISTS region_boxes (
-					    region_id TEXT NOT NULL,
-					    box_order INTEGER NOT NULL,
+					CREATE TABLE IF NOT EXISTS region_cuboids (
+					    region_id TEXT PRIMARY KEY NOT NULL,
 					    min_x INTEGER NOT NULL,
 					    min_y INTEGER NOT NULL,
 					    min_z INTEGER NOT NULL,
 					    max_x_exclusive INTEGER NOT NULL,
 					    max_y_exclusive INTEGER NOT NULL,
 					    max_z_exclusive INTEGER NOT NULL,
-					    PRIMARY KEY(region_id, box_order),
 					    FOREIGN KEY(region_id) REFERENCES regions(id) ON DELETE CASCADE
 					)
 					""");
-				statement.executeUpdate("CREATE INDEX IF NOT EXISTS region_boxes_region_id ON region_boxes(region_id)");
 				statement.execute("PRAGMA user_version = " + SCHEMA_VERSION);
 			}
 		});
@@ -125,35 +122,27 @@ public final class SqliteRegionRepository implements RegionRepository {
 	@Override
 	public synchronized List<RegionDefinition> loadAll() throws SQLException {
 		requireInitialized();
-		Map<RegionId, List<BlockBox>> boxes = new LinkedHashMap<>();
-		try (Statement statement = connection.createStatement(); ResultSet result = statement.executeQuery("""
-			SELECT region_id, min_x, min_y, min_z, max_x_exclusive, max_y_exclusive, max_z_exclusive
-			FROM region_boxes ORDER BY region_id, box_order
-			""")) {
-			while (result.next()) {
-				RegionId id = RegionId.parse(result.getString("region_id"));
-				boxes.computeIfAbsent(id, ignored -> new ArrayList<>()).add(new BlockBox(
-					result.getInt("min_x"), result.getInt("min_y"), result.getInt("min_z"),
-					result.getInt("max_x_exclusive"), result.getInt("max_y_exclusive"), result.getInt("max_z_exclusive")
-				));
-			}
-		}
-
 		List<RegionDefinition> definitions = new ArrayList<>();
 		try (Statement statement = connection.createStatement(); ResultSet result = statement.executeQuery("""
-			SELECT id, world_id, namespace, name, priority, revision, created_at, updated_at
-			FROM regions ORDER BY world_id, namespace, name
+			SELECT r.id, r.world_id, r.namespace, r.name, r.priority, r.revision, r.created_at, r.updated_at,
+			       c.min_x, c.min_y, c.min_z, c.max_x_exclusive, c.max_y_exclusive, c.max_z_exclusive
+			FROM regions r
+			LEFT JOIN region_cuboids c ON c.region_id = r.id
+			ORDER BY r.world_id, r.namespace, r.name
 			""")) {
 			while (result.next()) {
 				RegionId id = RegionId.parse(result.getString("id"));
-				List<BlockBox> regionBoxes = boxes.getOrDefault(id, List.of());
-				if (regionBoxes.isEmpty()) throw new SQLException("Region has no boxes: " + id);
+				if (result.getObject("min_x") == null) throw new SQLException("Region has no geometry: " + id);
 				definitions.add(new RegionDefinition(
 					id,
 					RegionKey.of(result.getString("namespace"), result.getString("name")),
 					WorldId.parse(result.getString("world_id")),
 					result.getInt("priority"),
-					regionBoxes,
+					new CuboidGeometry(new BlockBox(
+						result.getInt("min_x"), result.getInt("min_y"), result.getInt("min_z"),
+						result.getInt("max_x_exclusive"), result.getInt("max_y_exclusive"),
+						result.getInt("max_z_exclusive")
+					)),
 					Instant.ofEpochMilli(result.getLong("created_at")),
 					Instant.ofEpochMilli(result.getLong("updated_at")),
 					result.getLong("revision")
@@ -188,29 +177,18 @@ public final class SqliteRegionRepository implements RegionRepository {
 				statement.setLong(8, definition.updatedAt().toEpochMilli());
 				statement.executeUpdate();
 			}
-			try (PreparedStatement statement = connection.prepareStatement("DELETE FROM region_boxes WHERE region_id = ?")) {
+			try (PreparedStatement statement = connection.prepareStatement("DELETE FROM region_cuboids WHERE region_id = ?")) {
 				statement.setString(1, definition.id().toString());
 				statement.executeUpdate();
 			}
 			try (PreparedStatement statement = connection.prepareStatement("""
-				INSERT INTO region_boxes(
-				    region_id, box_order, min_x, min_y, min_z,
+				INSERT INTO region_cuboids(
+				    region_id, min_x, min_y, min_z,
 				    max_x_exclusive, max_y_exclusive, max_z_exclusive
-				) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+				) VALUES (?, ?, ?, ?, ?, ?, ?)
 				""")) {
-				for (int index = 0; index < definition.boxes().size(); index++) {
-					BlockBox box = definition.boxes().get(index);
-					statement.setString(1, definition.id().toString());
-					statement.setInt(2, index);
-					statement.setInt(3, box.minX());
-					statement.setInt(4, box.minY());
-					statement.setInt(5, box.minZ());
-					statement.setInt(6, box.maxXExclusive());
-					statement.setInt(7, box.maxYExclusive());
-					statement.setInt(8, box.maxZExclusive());
-					statement.addBatch();
-				}
-				statement.executeBatch();
+				bindCuboid(statement, definition);
+				statement.executeUpdate();
 			}
 		});
 	}
@@ -248,10 +226,10 @@ public final class SqliteRegionRepository implements RegionRepository {
 				INSERT INTO regions(id, world_id, namespace, name, priority, revision, created_at, updated_at)
 				VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 				"""); PreparedStatement boxStatement = connection.prepareStatement("""
-				INSERT INTO region_boxes(
-				    region_id, box_order, min_x, min_y, min_z,
+				INSERT INTO region_cuboids(
+				    region_id, min_x, min_y, min_z,
 				    max_x_exclusive, max_y_exclusive, max_z_exclusive
-				) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+				) VALUES (?, ?, ?, ?, ?, ?, ?)
 				""")) {
 				for (RegionDefinition definition : saves) {
 					regionStatement.setString(1, definition.id().toString());
@@ -263,23 +241,28 @@ public final class SqliteRegionRepository implements RegionRepository {
 					regionStatement.setLong(7, definition.createdAt().toEpochMilli());
 					regionStatement.setLong(8, definition.updatedAt().toEpochMilli());
 					regionStatement.addBatch();
-					for (int index = 0; index < definition.boxes().size(); index++) {
-						BlockBox box = definition.boxes().get(index);
-						boxStatement.setString(1, definition.id().toString());
-						boxStatement.setInt(2, index);
-						boxStatement.setInt(3, box.minX());
-						boxStatement.setInt(4, box.minY());
-						boxStatement.setInt(5, box.minZ());
-						boxStatement.setInt(6, box.maxXExclusive());
-						boxStatement.setInt(7, box.maxYExclusive());
-						boxStatement.setInt(8, box.maxZExclusive());
-						boxStatement.addBatch();
-					}
+					bindCuboid(boxStatement, definition);
+					boxStatement.addBatch();
 				}
 				regionStatement.executeBatch();
 				boxStatement.executeBatch();
 			}
 		});
+	}
+
+	private static void bindCuboid(PreparedStatement statement, RegionDefinition definition) throws SQLException {
+		RegionGeometry geometry = definition.geometry();
+		if (!(geometry instanceof CuboidGeometry cuboid)) {
+			throw new SQLException("Unsupported region geometry: " + geometry.getClass().getSimpleName());
+		}
+		BlockBox box = cuboid.bounds();
+		statement.setString(1, definition.id().toString());
+		statement.setInt(2, box.minX());
+		statement.setInt(3, box.minY());
+		statement.setInt(4, box.minZ());
+		statement.setInt(5, box.maxXExclusive());
+		statement.setInt(6, box.maxYExclusive());
+		statement.setInt(7, box.maxZExclusive());
 	}
 
 	@Override
