@@ -2,6 +2,7 @@ package com.voluble.titanMC.regions.protection.bukkit;
 
 import com.voluble.titanMC.regions.protection.model.ProtectionAction;
 import com.voluble.titanMC.regions.protection.service.ProtectionService;
+import org.bukkit.Tag;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -42,7 +43,17 @@ public final class BlockProtectionListener implements Listener {
 
 	@EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
 	public void onBlockInteract(PlayerInteractEvent event) {
-		if (event.getAction() != Action.RIGHT_CLICK_BLOCK || event.getClickedBlock() == null) return;
+		if (event.getClickedBlock() == null) return;
+		if (event.getAction() == Action.PHYSICAL
+			&& Tag.PRESSURE_PLATES.isTagged(event.getClickedBlock().getType())) {
+			if (!protection.allowed(BukkitProtectionMapper.request(
+				event.getPlayer(), ProtectionAction.PRESSURE_PLATE_TRIGGER, event.getClickedBlock()
+			))) {
+				event.setCancelled(true);
+			}
+			return;
+		}
+		if (event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
 		ProtectionAction action = isContainer(event.getClickedBlock())
 			? ProtectionAction.CONTAINER_OPEN
 			: ProtectionAction.BLOCK_INTERACT;
