@@ -3,7 +3,13 @@ build/
 out/
 run/
 *.iml
-.idea/workspace.xml
 .idea/
-docs/
+*.ipr
+*.iws
+*.log
+*.db
+*.db-shm
+*.db-wal
+.DS_Store
+Thumbs.db
 .gitignore

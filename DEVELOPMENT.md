@@ -3,14 +3,22 @@
 ## First import
 
 Open this directory as a Gradle project in IntelliJ IDEA and select JDK 21 for
-the Gradle JVM. The development server path is configured in
-`gradle.properties`.
+the Gradle JVM.
+
+`deployPlugin` copies the shaded JAR to `run/plugins` by default. To use a
+server elsewhere, set the Gradle property locally without committing the path:
+
+```powershell
+.\gradlew.bat deployPlugin -PserverDirectory=C:/path/to/server
+```
+
+The property can also be placed in `%USERPROFILE%/.gradle/gradle.properties`.
 
 ## Start and debug
 
-Select the shared **TitanMC Server** run configuration and press **Debug**. Its
-Gradle before-launch task builds the shaded plugin and copies it into the
-server's `plugins` directory before the server starts.
+Run `deployPlugin`, start the development server from IntelliJ, and attach the
+debugger to that Java process. Keep personal server paths and IntelliJ run
+configurations outside the repository.
 
 ## HotSwap method changes
 
@@ -31,6 +39,8 @@ plugin class loaders and can leave listeners, tasks, and static state behind.
 
 ```powershell
 .\gradlew.bat clean build
+.\gradlew.bat test
+.\gradlew.bat shadowJar
 .\gradlew.bat deployPlugin
 .\gradlew.bat classes
 ```
