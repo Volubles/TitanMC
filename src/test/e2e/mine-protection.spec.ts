@@ -19,12 +19,12 @@ test('mine regions allow mining while the protected world denies outside breaks'
     player.bot.closeWindow(player.bot.currentWindow);
   }
 
-  server.execute('fill 0 64 0 2 66 2 stone');
-  server.execute('setblock 5 65 1 stone');
+  server.execute('fill 0 64 0 2 66 2 dirt');
+  server.execute('setblock 5 65 1 dirt');
   await player.deOp();
   await waitUntil(
-    () => player.bot.blockAt(inside)?.name === 'stone'
-      && player.bot.blockAt(outside)?.name === 'stone',
+    () => player.bot.blockAt(inside)?.name === 'dirt'
+      && player.bot.blockAt(outside)?.name === 'dirt',
     { message: 'Expected test blocks to reach the bot before digging' },
   );
 
@@ -43,7 +43,7 @@ test('mine regions allow mining while the protected world denies outside breaks'
   void deniedDig.catch(() => undefined);
   try {
     await waitForStable(
-      () => player.bot.blockAt(outside)?.name === 'stone',
+      () => player.bot.blockAt(outside)?.name === 'dirt',
       {
         duration: 500,
         timeout: 3000,
