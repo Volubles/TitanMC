@@ -22,3 +22,6 @@ permissions:
   titanmc.mine.admin:
     description: Allows managing mines
     default: op
+  titanmc.protection.bypass:
+    description: Bypasses Titan region protection
+    default: op

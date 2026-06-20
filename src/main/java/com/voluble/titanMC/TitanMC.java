@@ -9,6 +9,11 @@ import com.voluble.titanMC.mines.MineManager;
 import com.voluble.titanMC.mines.reset.MineScheduler;
 import com.voluble.titanMC.mines.listeners.MineBlockListener;
 import com.voluble.titanMC.regions.persistence.RegionStorageException;
+import com.voluble.titanMC.regions.protection.bukkit.BlockProtectionListener;
+import com.voluble.titanMC.regions.protection.bukkit.BukkitProtectionConfiguration;
+import com.voluble.titanMC.regions.protection.policy.ProtectionBypass;
+import com.voluble.titanMC.regions.protection.policy.RegionPolicyRegistry;
+import com.voluble.titanMC.regions.protection.service.ProtectionService;
 import com.voluble.titanMC.regions.service.RegionEngine;
 import io.voluble.michellelib.commands.CommandKit;
 import io.voluble.michellelib.menu.MenuService;
@@ -28,6 +33,7 @@ public final class TitanMC extends JavaPlugin {
 	private MineScheduler mineScheduler;
 	private MenuService menuService;
 	private RegionEngine regionEngine;
+	private ProtectionService protectionService;
 
 	@Override
 	public void onEnable() {
@@ -48,6 +54,7 @@ public final class TitanMC extends JavaPlugin {
 		// Initialize general config
 		configManager = new ConfigManager(this);
 		configManager.initialize();
+		if (!initializeProtection()) return;
 
 		// Register component configs
 		donatorToolsConfigManager = new DonatorToolsConfigManager(this);
@@ -73,6 +80,35 @@ public final class TitanMC extends JavaPlugin {
 			.install();
 
 		getLogger().info("TitanMC has been enabled!");
+	}
+
+	private boolean initializeProtection() {
+		BukkitProtectionConfiguration configuration;
+		try {
+			configuration = BukkitProtectionConfiguration.load(getConfig(), getServer());
+		} catch (IllegalArgumentException exception) {
+			getLogger().severe("Invalid protection configuration: " + exception.getMessage());
+			getServer().getPluginManager().disablePlugin(this);
+			return false;
+		}
+		if (!configuration.enabled()) {
+			getLogger().info("Titan protection is disabled");
+			return true;
+		}
+
+		protectionService = ProtectionService.forEngine(
+			regionEngine,
+			RegionPolicyRegistry.builder().build(),
+			configuration.defaults(),
+			ProtectionBypass.permission(configuration.bypassPermission())
+		);
+		getServer().getPluginManager().registerEvents(new BlockProtectionListener(protectionService), this);
+		if (configuration.protectedWorlds().isEmpty()) {
+			getLogger().warning("Titan protection is enabled, but protected-worlds is empty; no world is protected");
+		} else {
+			getLogger().info("Titan protection enabled for " + configuration.protectedWorlds().size() + " world(s)");
+		}
+		return true;
 	}
 
 	@Override
@@ -111,4 +147,5 @@ public final class TitanMC extends JavaPlugin {
 	public MineScheduler getMineScheduler() { return mineScheduler; }
 	public MenuService getMenuService() { return menuService; }
 	public RegionEngine getRegionEngine() { return regionEngine; }
+	public ProtectionService getProtectionService() { return protectionService; }
 }
