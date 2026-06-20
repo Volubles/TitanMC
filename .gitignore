@@ -5,6 +5,7 @@ run/
 *.iml
 .idea/
 docs/
+AGENTS.md
 *.ipr
 *.iws
 *.log
