@@ -2,7 +2,7 @@ name: TitanMC
 version: '1.0-SNAPSHOT'
 main: com.voluble.titanMC.TitanMC
 api-version: '1.21'
-softdepend: [WorldEdit, FastAsyncWorldEdit, WorldGuard]
+softdepend: [WorldEdit, FastAsyncWorldEdit]
 commands:
   dtools:
     description: Give a donator tool
