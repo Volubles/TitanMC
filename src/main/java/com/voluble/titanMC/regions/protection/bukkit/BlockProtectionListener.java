@@ -52,6 +52,7 @@ public final class BlockProtectionListener implements Listener {
 			return;
 		}
 		if (event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
+		if (!event.getClickedBlock().getType().isInteractable()) return;
 		ProtectionAction action = isContainer(event.getClickedBlock())
 			? ProtectionAction.CONTAINER_OPEN
 			: ProtectionAction.BLOCK_INTERACT;

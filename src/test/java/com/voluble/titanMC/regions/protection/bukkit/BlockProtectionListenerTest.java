@@ -90,7 +90,7 @@ class BlockProtectionListenerTest extends MockBukkitProtectionTestSupport {
 	void deniesRightClickAndPhysicalBlockInteractions() {
 		register(request -> ProtectionDecision.DENY, ProtectionBypass.none());
 		Block clicked = world.getBlockAt(3, 64, 3);
-		clicked.setType(Material.FARMLAND);
+		clicked.setType(Material.LEVER);
 		PlayerInteractEvent blockInteraction = interactEvent(Action.RIGHT_CLICK_BLOCK, clicked);
 		PlayerInteractEvent physicalInteraction = interactEvent(Action.PHYSICAL, clicked);
 		PlayerInteractEvent airInteraction = interactEvent(Action.RIGHT_CLICK_AIR, null);
@@ -103,6 +103,34 @@ class BlockProtectionListenerTest extends MockBukkitProtectionTestSupport {
 		assertEquals(Event.Result.DENY, blockInteraction.useInteractedBlock());
 		assertTrue(physicalInteraction.isCancelled());
 		assertEquals(airBefore, airInteraction.useInteractedBlock());
+	}
+
+	@Test
+	void doesNotTreatPlainPlacementSupportAsBlockInteraction() {
+		register(
+			request -> request.action() == ProtectionAction.BLOCK_PLACE
+				? ProtectionDecision.ALLOW
+				: ProtectionDecision.DENY,
+			ProtectionBypass.none()
+		);
+		Block stone = world.getBlockAt(3, 64, 3);
+		stone.setType(Material.STONE);
+		PlayerInteractEvent interaction = new PlayerInteractEvent(
+			player,
+			Action.RIGHT_CLICK_BLOCK,
+			new ItemStack(Material.STONE),
+			stone,
+			BlockFace.UP,
+			EquipmentSlot.HAND
+		);
+		Event.Result before = interaction.useInteractedBlock();
+		BlockPlaceEvent placement = placeEvent(world.getBlockAt(3, 65, 3));
+
+		server.getPluginManager().callEvent(interaction);
+		server.getPluginManager().callEvent(placement);
+
+		assertEquals(before, interaction.useInteractedBlock());
+		assertFalse(placement.isCancelled());
 	}
 
 	@Test
