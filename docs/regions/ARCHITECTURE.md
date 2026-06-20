@@ -1,4 +1,4 @@
-# Titan Region Engine
+# Titan Region and Protection Engine
 
 ## Invariants
 
@@ -13,8 +13,14 @@
 
 ## Boundaries
 
-The model and index packages do not depend on Bukkit or Paper. Protection rules,
-FAWE selection, commands, and cell rental behavior belong in higher layers.
+The model, index, persistence, and protection decision packages do not depend on
+Bukkit or Paper. Paper listeners only translate events and delegate decisions
+to `ProtectionService`; they do not contain authorization rules.
 
-The v0.1 engine intentionally does not enforce protection. It supplies durable,
-deterministic region data for the later protection and cells modules.
+Region geometry is separate from domain ownership. Cell, mine, and future admin
+policies own their authorization data and expose immutable evaluators for
+multi-block operations.
+
+The engine deliberately has no region inheritance, magical aggregate build
+flag, passthrough region, or geometric global region. Overlaps are resolved by
+explicit decisions and priority.
