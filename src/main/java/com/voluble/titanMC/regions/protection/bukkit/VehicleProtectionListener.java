@@ -48,7 +48,10 @@ public final class VehicleProtectionListener implements Listener {
 
 	@EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
 	public void onVehicleDamage(VehicleDamageEvent event) {
-		if (!(event.getAttacker() instanceof Player player)) return;
+		Player player = event.getAttacker() == null
+			? null
+			: EntityInteractionProtectionListener.responsiblePlayer(event.getAttacker());
+		if (player == null) return;
 		if (!allowed(player, ProtectionAction.VEHICLE_MODIFY, event.getVehicle().getLocation())) {
 			event.setCancelled(true);
 		}
@@ -56,7 +59,10 @@ public final class VehicleProtectionListener implements Listener {
 
 	@EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
 	public void onVehicleDestroy(VehicleDestroyEvent event) {
-		if (!(event.getAttacker() instanceof Player player)) return;
+		Player player = event.getAttacker() == null
+			? null
+			: EntityInteractionProtectionListener.responsiblePlayer(event.getAttacker());
+		if (player == null) return;
 		if (!allowed(player, ProtectionAction.VEHICLE_MODIFY, event.getVehicle().getLocation())) {
 			event.setCancelled(true);
 		}

@@ -5,6 +5,7 @@ import com.voluble.titanMC.regions.protection.model.ProtectionActor;
 import com.voluble.titanMC.regions.protection.model.TransitionRule;
 import com.voluble.titanMC.regions.protection.service.ProtectionEvaluation;
 import com.voluble.titanMC.regions.protection.service.ProtectionService;
+import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.Directional;
 import org.bukkit.entity.Player;
@@ -47,6 +48,7 @@ public final class BlockAutomationProtectionListener implements Listener {
 
 	@EventHandler(priority = EventPriority.HIGH)
 	public void onRedstoneChange(BlockRedstoneEvent event) {
+		if (isDirectInteractionInput(event.getBlock())) return;
 		if (!protection.allowed(BukkitProtectionMapper.request(
 			REDSTONE, ProtectionAction.REDSTONE_CHANGE, event.getBlock()
 		))) {
@@ -67,5 +69,18 @@ public final class BlockAutomationProtectionListener implements Listener {
 				player, ProtectionAction.TNT_PRIME, event.getBlock()
 			));
 		if (!allowed) event.setCancelled(true);
+	}
+
+	private static boolean isDirectInteractionInput(Block block) {
+		Material type = block.getType();
+		String name = type.name();
+		return type == Material.LEVER
+			|| type == Material.TRIPWIRE
+			|| type == Material.DAYLIGHT_DETECTOR
+			|| type == Material.LECTERN
+			|| type == Material.COMPARATOR
+			|| type == Material.REPEATER
+			|| name.endsWith("_BUTTON")
+			|| name.endsWith("_PRESSURE_PLATE");
 	}
 }

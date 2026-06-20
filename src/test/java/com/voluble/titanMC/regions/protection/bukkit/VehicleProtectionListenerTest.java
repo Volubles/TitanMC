@@ -10,6 +10,7 @@ import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Projectile;
 import org.bukkit.entity.Vehicle;
 import org.bukkit.event.vehicle.VehicleDamageEvent;
 import org.bukkit.event.vehicle.VehicleDestroyEvent;
@@ -85,6 +86,36 @@ class VehicleProtectionListenerTest extends MockBukkitProtectionTestSupport {
 	@Test
 	void deniesPlayersDestroyingVehicles() {
 		VehicleDestroyEvent event = new VehicleDestroyEvent(vehicle, player);
+
+		listener.onVehicleDestroy(event);
+
+		assertTrue(event.isCancelled());
+		assertRequest(ProtectionAction.VEHICLE_MODIFY);
+	}
+
+	@Test
+	void attributesProjectileVehicleDamageToItsPlayerShooter() {
+		Projectile arrow = (Projectile) vehicle.getWorld().spawnEntity(
+			vehicle.getLocation(),
+			EntityType.ARROW
+		);
+		arrow.setShooter(player);
+		VehicleDamageEvent event = new VehicleDamageEvent(vehicle, arrow, 1.0);
+
+		listener.onVehicleDamage(event);
+
+		assertTrue(event.isCancelled());
+		assertRequest(ProtectionAction.VEHICLE_MODIFY);
+	}
+
+	@Test
+	void attributesProjectileVehicleDestructionToItsPlayerShooter() {
+		Projectile arrow = (Projectile) vehicle.getWorld().spawnEntity(
+			vehicle.getLocation(),
+			EntityType.ARROW
+		);
+		arrow.setShooter(player);
+		VehicleDestroyEvent event = new VehicleDestroyEvent(vehicle, arrow);
 
 		listener.onVehicleDestroy(event);
 

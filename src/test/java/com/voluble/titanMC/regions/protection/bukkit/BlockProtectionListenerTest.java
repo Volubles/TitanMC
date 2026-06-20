@@ -110,6 +110,37 @@ class BlockProtectionListenerTest extends MockBukkitProtectionTestSupport {
 	}
 
 	@Test
+	void adminBypassSurvivesFollowUpRedstoneEvents() {
+		player.addAttachment(plugin, "titanmc.protection.bypass", true);
+		ProtectionService service = service(
+			request -> ProtectionDecision.DENY,
+			BukkitProtectionBypass.permission(server, "titanmc.protection.bypass")
+		);
+		server.getPluginManager().registerEvents(new BlockProtectionListener(service), plugin);
+		server.getPluginManager().registerEvents(new BlockAutomationProtectionListener(service), plugin);
+		Block lever = world.getBlockAt(6, 64, 6);
+		lever.setType(Material.LEVER);
+		Block pressurePlate = world.getBlockAt(7, 64, 7);
+		pressurePlate.setType(Material.STONE_PRESSURE_PLATE);
+		PlayerInteractEvent leverInteraction = interactEvent(Action.RIGHT_CLICK_BLOCK, lever);
+		PlayerInteractEvent plateInteraction = interactEvent(Action.PHYSICAL, pressurePlate);
+		org.bukkit.event.block.BlockRedstoneEvent leverPower =
+			new org.bukkit.event.block.BlockRedstoneEvent(lever, 0, 15);
+		org.bukkit.event.block.BlockRedstoneEvent platePower =
+			new org.bukkit.event.block.BlockRedstoneEvent(pressurePlate, 0, 15);
+
+		server.getPluginManager().callEvent(leverInteraction);
+		server.getPluginManager().callEvent(leverPower);
+		server.getPluginManager().callEvent(plateInteraction);
+		server.getPluginManager().callEvent(platePower);
+
+		assertFalse(leverInteraction.useInteractedBlock() == Event.Result.DENY);
+		assertEquals(15, leverPower.getNewCurrent());
+		assertFalse(plateInteraction.isCancelled());
+		assertEquals(15, platePower.getNewCurrent());
+	}
+
+	@Test
 	void deniesRightClickAndPhysicalBlockInteractions() {
 		register(request -> ProtectionDecision.DENY, ProtectionBypass.none());
 		Block clicked = world.getBlockAt(3, 64, 3);
@@ -216,13 +247,22 @@ class BlockProtectionListenerTest extends MockBukkitProtectionTestSupport {
 		com.voluble.titanMC.regions.protection.policy.ProtectionDefaults defaults,
 		ProtectionBypass bypass
 	) {
-		ProtectionService service = new ProtectionService(
+		server.getPluginManager().registerEvents(
+			new BlockProtectionListener(service(defaults, bypass)),
+			plugin
+		);
+	}
+
+	private ProtectionService service(
+		com.voluble.titanMC.regions.protection.policy.ProtectionDefaults defaults,
+		ProtectionBypass bypass
+	) {
+		return new ProtectionService(
 			(worldId, x, y, z) -> List.of(),
 			RegionPolicyRegistry.builder().build(),
 			defaults,
 			bypass
 		);
-		server.getPluginManager().registerEvents(new BlockProtectionListener(service), plugin);
 	}
 
 	private BlockBreakEvent breakEvent(Block block) {
