@@ -90,6 +90,15 @@ public final class CellStorage implements AutoCloseable {
 				    FOREIGN KEY(cell_id) REFERENCES cells(id) ON DELETE CASCADE
 				)
 				""");
+			statement.executeUpdate("""
+				CREATE TABLE IF NOT EXISTS cell_members (
+				    cell_id TEXT NOT NULL,
+				    lease_generation INTEGER NOT NULL,
+				    player_uuid TEXT NOT NULL,
+				    PRIMARY KEY(cell_id, lease_generation, player_uuid),
+				    FOREIGN KEY(cell_id) REFERENCES cells(id) ON DELETE CASCADE
+				)
+				""");
 			statement.executeUpdate("CREATE INDEX IF NOT EXISTS idx_cell_blocks_cell ON cell_blocks(cell_id, lease_generation)");
 			statement.executeUpdate("""
 				CREATE TABLE IF NOT EXISTS cell_recovery_lots (
@@ -157,12 +166,15 @@ public final class CellStorage implements AutoCloseable {
 		}
 		return blocks;
 	}
+	public synchronized Map<String,java.util.Set<UUID>> loadMembers(Map<String,CellLease> leases) throws SQLException {Map<String,java.util.Set<UUID>> members=new LinkedHashMap<>();try(Statement s=connection.createStatement();ResultSet r=s.executeQuery("SELECT * FROM cell_members ORDER BY cell_id,player_uuid")){while(r.next()){String cellId=r.getString("cell_id");CellLease lease=leases.get(cellId);if(lease!=null&&lease.generation()==r.getLong("lease_generation"))members.computeIfAbsent(cellId,ignored->new java.util.LinkedHashSet<>()).add(UUID.fromString(r.getString("player_uuid")));}}return members;}
 	public synchronized Map<String,CellResetJob> loadResetJobs() throws SQLException { Map<String,CellResetJob> jobs=new LinkedHashMap<>(); try(Statement s=connection.createStatement();ResultSet r=s.executeQuery("SELECT * FROM cell_reset_jobs")){while(r.next()){Object value=r.getObject("recovery_lot_id");Long lot=value instanceof Number number?number.longValue():null; CellResetJob j=new CellResetJob(r.getString("cell_id"),r.getLong("lease_generation"),UUID.fromString(r.getString("owner_uuid")),CellResetJob.Phase.valueOf(r.getString("phase")),lot);jobs.put(j.cellId(),j);}}return jobs; }
 
 	public CompletableFuture<Void> saveCell(CellDefinition cell) { return write(() -> upsertCell(cell)); }
 	public CompletableFuture<Void> deleteCell(String id) { return write(() -> execute("DELETE FROM cells WHERE id = ?", id)); }
 	public CompletableFuture<Void> saveLease(CellLease lease) { return write(() -> upsertLease(lease)); }
 	public CompletableFuture<Void> deleteLease(String cellId) { return write(() -> execute("DELETE FROM cell_leases WHERE cell_id = ?", cellId)); }
+	public CompletableFuture<Void> addMember(String cellId,long generation,UUID playerId){return write(()->execute("INSERT OR IGNORE INTO cell_members VALUES(?,?,?)",cellId,generation,playerId.toString()));}
+	public CompletableFuture<Void> removeMember(String cellId,long generation,UUID playerId){return write(()->execute("DELETE FROM cell_members WHERE cell_id=? AND lease_generation=? AND player_uuid=?",cellId,generation,playerId.toString()));}
 	public CompletableFuture<Void> addBlocks(Collection<TrackedCellBlock> blocks) { return write(() -> insertBlocks(blocks)); }
 	public CompletableFuture<Void> removeBlocks(Collection<TrackedCellBlock> blocks) { return write(() -> deleteBlocks(blocks)); }
 	public CompletableFuture<Void> deleteBlocks(String cellId, long generation) { return write(() -> execute("DELETE FROM cell_blocks WHERE cell_id = ? AND lease_generation = ?", cellId, generation)); }
@@ -232,7 +244,7 @@ public final class CellStorage implements AutoCloseable {
 		} catch (SQLException e) { connection.rollback(); throw e; }
 		finally { connection.setAutoCommit(old); }
 	}
-	private void completeResetTransaction(String cellId,long generation,long lotId) throws SQLException { boolean old=connection.getAutoCommit();connection.setAutoCommit(false);try{execute("DELETE FROM cell_blocks WHERE cell_id=? AND lease_generation=?",cellId,generation);execute("DELETE FROM cell_leases WHERE cell_id=?",cellId);execute("UPDATE cell_recovery_lots SET status='READY' WHERE id=?",lotId);execute("DELETE FROM cell_reset_jobs WHERE cell_id=?",cellId);connection.commit();}catch(SQLException e){connection.rollback();throw e;}finally{connection.setAutoCommit(old);} }
+	private void completeResetTransaction(String cellId,long generation,long lotId) throws SQLException { boolean old=connection.getAutoCommit();connection.setAutoCommit(false);try{execute("DELETE FROM cell_blocks WHERE cell_id=? AND lease_generation=?",cellId,generation);execute("DELETE FROM cell_members WHERE cell_id=? AND lease_generation=?",cellId,generation);execute("DELETE FROM cell_leases WHERE cell_id=?",cellId);execute("UPDATE cell_recovery_lots SET status='READY' WHERE id=?",lotId);execute("DELETE FROM cell_reset_jobs WHERE cell_id=?",cellId);connection.commit();}catch(SQLException e){connection.rollback();throw e;}finally{connection.setAutoCommit(old);} }
 
 	private void execute(String sql, Object... values) throws SQLException {
 		try (PreparedStatement s = connection.prepareStatement(sql)) { for (int i=0;i<values.length;i++) s.setObject(i+1, values[i]); s.executeUpdate(); }
