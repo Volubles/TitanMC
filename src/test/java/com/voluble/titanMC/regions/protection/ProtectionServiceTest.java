@@ -6,6 +6,7 @@ import com.voluble.titanMC.regions.model.BlockBox;
 import com.voluble.titanMC.regions.model.BlockPosition;
 import com.voluble.titanMC.regions.model.CuboidGeometry;
 import com.voluble.titanMC.regions.model.RegionDefinition;
+import com.voluble.titanMC.regions.model.RegionAccessSet;
 import com.voluble.titanMC.regions.model.RegionId;
 import com.voluble.titanMC.regions.model.RegionKey;
 import com.voluble.titanMC.regions.model.WorldId;
@@ -15,6 +16,7 @@ import com.voluble.titanMC.regions.protection.model.ProtectionDecision;
 import com.voluble.titanMC.regions.protection.model.ProtectionRequest;
 import com.voluble.titanMC.regions.protection.model.ProtectionResolution;
 import com.voluble.titanMC.regions.protection.model.RegionFlagSet;
+import com.voluble.titanMC.regions.protection.model.RegionSubject;
 import com.voluble.titanMC.regions.protection.policy.ProtectionBypass;
 import com.voluble.titanMC.regions.protection.policy.RegionPolicyRegistry;
 import com.voluble.titanMC.regions.protection.policy.RegionProtectionPolicy;
@@ -26,6 +28,8 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -86,6 +90,42 @@ class ProtectionServiceTest {
 
 		assertEquals(ProtectionDecision.ALLOW, resolution.decision());
 		assertEquals("region-flags", resolution.evaluations().getFirst().policyId());
+	}
+
+	@Test
+	void ownerAndVaultGroupScopesResolveWithoutUnnecessaryGroupQueries() throws Exception {
+		UUID ownerId = PLAYER.playerId();
+		RegionFlagSet flags = RegionFlagSet.empty()
+			.with(ProtectionAction.BLOCK_BREAK, RegionSubject.EVERYONE, ProtectionDecision.DENY)
+			.with(ProtectionAction.BLOCK_BREAK, RegionSubject.OWNERS, ProtectionDecision.ALLOW)
+			.with(ProtectionAction.CONTAINER_OPEN, RegionSubject.group("vip"), ProtectionDecision.ALLOW);
+		RegionDefinition region = region(
+			1, "custom", "cell", 100, RegionAccessSet.of(Set.of(ownerId), Set.of()), flags
+		);
+		AtomicInteger groupQueries = new AtomicInteger();
+		ProtectionService service = new ProtectionService(
+			snapshot(List.of(region))::findAll,
+			RegionPolicyRegistry.builder().build(),
+			WorldProtectionDefaults.builder().fallback(ProtectionDecision.DENY).build(),
+			ProtectionBypass.none(),
+			(actor, worldId, group) -> {
+				groupQueries.incrementAndGet();
+				return group.equals("vip");
+			}
+		);
+
+		ProtectionResolution ownerResolution = service.resolve(request());
+
+		assertEquals(ProtectionDecision.ALLOW, ownerResolution.decision());
+		assertEquals("region-flags:owners", ownerResolution.evaluations().getFirst().policyId());
+		assertEquals(0, groupQueries.get());
+
+		ProtectionResolution groupResolution = service.resolve(
+			ProtectionRequest.at(PLAYER, ProtectionAction.CONTAINER_OPEN, POSITION)
+		);
+
+		assertEquals(ProtectionDecision.ALLOW, groupResolution.decision());
+		assertEquals(1, groupQueries.get());
 	}
 
 	@Test
@@ -273,6 +313,29 @@ class ProtectionServiceTest {
 			flags,
 			Instant.EPOCH,
 			Instant.EPOCH
+		);
+	}
+
+	private static RegionDefinition region(
+		long id,
+		String namespace,
+		String name,
+		int priority,
+		RegionAccessSet access,
+		RegionFlagSet flags
+	) {
+		return new RegionDefinition(
+			new RegionId(new UUID(0L, id)),
+			RegionKey.of(namespace, name),
+			WORLD,
+			priority,
+			new CuboidGeometry(new BlockBox(0, 0, 0, 16, 16, 16)),
+			access,
+			flags,
+			com.voluble.titanMC.regions.model.RegionTextSet.empty(),
+			Instant.EPOCH,
+			Instant.EPOCH,
+			1L
 		);
 	}
 

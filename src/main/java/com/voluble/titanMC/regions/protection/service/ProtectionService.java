@@ -12,6 +12,7 @@ import com.voluble.titanMC.regions.protection.policy.ProtectionDefaults;
 import com.voluble.titanMC.regions.protection.policy.ProtectionEvaluationContext;
 import com.voluble.titanMC.regions.protection.policy.RegionPolicyEvaluationRegistry;
 import com.voluble.titanMC.regions.protection.policy.RegionPolicyRegistry;
+import com.voluble.titanMC.regions.protection.policy.RegionGroupProvider;
 import com.voluble.titanMC.regions.service.RegionEngine;
 
 import java.time.Instant;
@@ -33,6 +34,7 @@ public final class ProtectionService {
 	private final RegionPolicyRegistry policies;
 	private final ProtectionDefaults defaults;
 	private final ProtectionBypass bypass;
+	private final RegionGroupProvider groups;
 
 	public ProtectionService(
 		RegionLookup regions,
@@ -40,7 +42,17 @@ public final class ProtectionService {
 		ProtectionDefaults defaults,
 		ProtectionBypass bypass
 	) {
-		this(() -> regions, policies, defaults, bypass);
+		this(regions, policies, defaults, bypass, RegionGroupProvider.none());
+	}
+
+	public ProtectionService(
+		RegionLookup regions,
+		RegionPolicyRegistry policies,
+		ProtectionDefaults defaults,
+		ProtectionBypass bypass,
+		RegionGroupProvider groups
+	) {
+		this(() -> regions, policies, defaults, bypass, groups);
 		Objects.requireNonNull(regions, "regions");
 	}
 
@@ -48,12 +60,14 @@ public final class ProtectionService {
 		Supplier<RegionLookup> regionSource,
 		RegionPolicyRegistry policies,
 		ProtectionDefaults defaults,
-		ProtectionBypass bypass
+		ProtectionBypass bypass,
+		RegionGroupProvider groups
 	) {
 		this.regionSource = Objects.requireNonNull(regionSource, "regionSource");
 		this.policies = Objects.requireNonNull(policies, "policies");
 		this.defaults = Objects.requireNonNull(defaults, "defaults");
 		this.bypass = Objects.requireNonNull(bypass, "bypass");
+		this.groups = Objects.requireNonNull(groups, "groups");
 	}
 
 	public static ProtectionService forEngine(
@@ -62,9 +76,19 @@ public final class ProtectionService {
 		ProtectionDefaults defaults,
 		ProtectionBypass bypass
 	) {
+		return forEngine(engine, policies, defaults, bypass, RegionGroupProvider.none());
+	}
+
+	public static ProtectionService forEngine(
+		RegionEngine engine,
+		RegionPolicyRegistry policies,
+		ProtectionDefaults defaults,
+		ProtectionBypass bypass,
+		RegionGroupProvider groups
+	) {
 		Objects.requireNonNull(engine, "engine");
 		return new ProtectionService(
-			() -> RegionLookup.from(engine.readView()), policies, defaults, bypass
+			() -> RegionLookup.from(engine.readView()), policies, defaults, bypass, groups
 		);
 	}
 
@@ -97,7 +121,7 @@ public final class ProtectionService {
 			return failedEvaluation(regions, actor, evaluatedAt, ProtectionResolution.Reason.BYPASS_ERROR, exception);
 		}
 		return new ProtectionEvaluation(
-			this, regions, evaluationPolicies, evaluationDefaults, evaluationBypass, actor, evaluatedAt
+			this, regions, evaluationPolicies, evaluationDefaults, evaluationBypass, groups, actor, evaluatedAt
 		);
 	}
 
@@ -159,10 +183,34 @@ public final class ProtectionService {
 			ProtectionDecision levelDecision = ProtectionDecision.ABSTAIN;
 			for (int index = start; index < end; index++) {
 				RegionDefinition region = applicable.get(index);
-				ProtectionDecision flagDecision = region.flags().decision(request.action());
-				if (flagDecision.explicit()) {
+				java.util.Optional<com.voluble.titanMC.regions.protection.model.RegionFlagSet.ResolvedRule> flagRule;
+				try {
+					flagRule = region.flags().resolve(
+						request.action(),
+						region.access(),
+						request.actor().playerId(),
+						group -> evaluation.groups.matches(region.worldId(), group)
+					);
+				} catch (RuntimeException exception) {
+					trace.add(RegionPolicyEvaluation.failed(
+						region.id(), region.key(), priority, "region-flags", safeError(exception)
+					));
+					return resolution(
+						ProtectionDecision.DENY, ProtectionResolution.Reason.POLICY_ERROR,
+						OptionalInt.of(priority), trace, safeError(exception)
+					);
+				}
+				if (flagRule.isPresent()) {
+					var resolvedFlag = flagRule.orElseThrow();
+					ProtectionDecision flagDecision = resolvedFlag.decision();
 					trace.add(RegionPolicyEvaluation.decided(
-						region.id(), region.key(), priority, "region-flags", flagDecision
+						region.id(), region.key(), priority,
+						resolvedFlag.subject().equals(
+							com.voluble.titanMC.regions.protection.model.RegionSubject.EVERYONE
+						)
+							? "region-flags"
+							: "region-flags:" + resolvedFlag.subject().externalName(),
+						flagDecision
 					));
 					if (flagDecision == ProtectionDecision.DENY) levelDecision = ProtectionDecision.DENY;
 					else if (levelDecision == ProtectionDecision.ABSTAIN) levelDecision = ProtectionDecision.ALLOW;
@@ -250,7 +298,7 @@ public final class ProtectionService {
 		RegionPolicyEvaluationRegistry empty = RegionPolicyRegistry.builder().build().openEvaluation(context);
 		return new ProtectionEvaluation(
 			this, regions, empty, request -> ProtectionDecision.DENY, ProtectionBypass.none(),
-			actor, evaluatedAt, reason, safeError(exception)
+			groups, actor, evaluatedAt, reason, safeError(exception)
 		);
 	}
 

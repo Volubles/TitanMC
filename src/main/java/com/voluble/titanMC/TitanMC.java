@@ -32,7 +32,9 @@ import com.voluble.titanMC.regions.protection.bukkit.PortalProtectionListener;
 import com.voluble.titanMC.regions.protection.bukkit.TrustedFluidFlow;
 import com.voluble.titanMC.regions.protection.bukkit.VehicleProtectionListener;
 import com.voluble.titanMC.regions.protection.bukkit.RegionEntryProtectionListener;
+import com.voluble.titanMC.regions.protection.bukkit.VaultRegionGroupProvider;
 import com.voluble.titanMC.regions.protection.policy.ProtectionBypass;
+import com.voluble.titanMC.regions.protection.policy.RegionGroupProvider;
 import com.voluble.titanMC.regions.protection.policy.RegionPolicyRegistry;
 import com.voluble.titanMC.regions.protection.service.ProtectionService;
 import com.voluble.titanMC.regions.protection.service.RegionEntryService;
@@ -40,6 +42,8 @@ import com.voluble.titanMC.regions.service.RegionEngine;
 import io.voluble.michellelib.commands.CommandKit;
 import io.voluble.michellelib.menu.MenuService;
 import net.milkbowl.vault.economy.Economy;
+import net.milkbowl.vault.permission.Permission;
+import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 import com.voluble.titanMC.mines.command.MineCommandModule;
 
@@ -55,6 +59,7 @@ public final class TitanMC extends JavaPlugin {
 	private MenuService menuService;
 	private RegionEngine regionEngine;
 	private ProtectionService protectionService;
+	private RegionGroupProvider regionGroups = RegionGroupProvider.none();
 
 	@Override
 	public void onEnable() {
@@ -137,16 +142,37 @@ public final class TitanMC extends JavaPlugin {
 		ProtectionBypass protectionBypass = BukkitProtectionBypass.permission(
 			getServer(), configuration.bypassPermission()
 		);
+		RegisteredServiceProvider<Permission> permissionRegistration =
+			getServer().getServicesManager().getRegistration(Permission.class);
+		if (permissionRegistration != null
+			&& permissionRegistration.getProvider() != null
+			&& permissionRegistration.getProvider().isEnabled()
+			&& permissionRegistration.getProvider().hasGroupSupport()) {
+			regionGroups = new VaultRegionGroupProvider(
+				getServer(), permissionRegistration.getProvider()
+			);
+			getLogger().info(
+				"Titan region group scopes enabled through " + permissionRegistration.getProvider().getName()
+			);
+		} else {
+			regionGroups = RegionGroupProvider.none();
+			getLogger().warning(
+				"No Vault permissions provider with group support was found; group-scoped region rules will not match"
+			);
+		}
 		protectionService = ProtectionService.forEngine(
 			regionEngine,
 			RegionPolicyRegistry.builder()
 				.register(new MineProtectionPolicy())
 				.build(),
 			configuration.defaults(),
-			protectionBypass
+			protectionBypass,
+			regionGroups
 		);
 		getServer().getPluginManager().registerEvents(
-			new RegionEntryProtectionListener(new RegionEntryService(regionEngine, protectionBypass)),
+			new RegionEntryProtectionListener(
+				new RegionEntryService(regionEngine, protectionBypass, regionGroups)
+			),
 			this
 		);
 		getServer().getPluginManager().registerEvents(new BlockProtectionListener(protectionService), this);
@@ -200,5 +226,6 @@ public final class TitanMC extends JavaPlugin {
 	public MineScheduler getMineScheduler() { return mineScheduler; }
 	public MenuService getMenuService() { return menuService; }
 	public RegionEngine getRegionEngine() { return regionEngine; }
+	public RegionGroupProvider getRegionGroups() { return regionGroups; }
 	public ProtectionService getProtectionService() { return protectionService; }
 }

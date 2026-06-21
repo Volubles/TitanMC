@@ -9,6 +9,7 @@ import com.voluble.titanMC.regions.model.WorldId;
 import com.voluble.titanMC.regions.protection.model.ProtectionAction;
 import com.voluble.titanMC.regions.protection.model.ProtectionActor;
 import com.voluble.titanMC.regions.protection.model.ProtectionDecision;
+import com.voluble.titanMC.regions.protection.model.RegionSubject;
 import com.voluble.titanMC.regions.protection.policy.ProtectionBypass;
 import com.voluble.titanMC.regions.protection.service.RegionEntryService;
 import com.voluble.titanMC.regions.service.RegionEngine;
@@ -196,6 +197,45 @@ class RegionEntryServiceTest {
 
 			assertEquals(ProtectionDecision.DENY, denied.decision());
 			assertEquals(1, actorCreations.get());
+		}
+	}
+
+	@Test
+	void scopedEntryRulesUseOwnersAndGroups() throws Exception {
+		try (RegionEngine engine = RegionEngine.open(temporaryDirectory.resolve("scoped-entry.db"))) {
+			RegionAdminService admin = new RegionAdminService(engine);
+			assertTrue(admin.create(
+				"cell", world, 100, new CuboidGeometry(new BlockBox(0, 0, 0, 10, 10, 10))
+			).successful());
+			assertTrue(admin.addOwner("cell", world, player.playerId()).successful());
+			assertTrue(admin.setFlag(
+				"cell", world, ProtectionAction.ENTRY, RegionSubject.EVERYONE, ProtectionDecision.DENY
+			).successful());
+			assertTrue(admin.setFlag(
+				"cell", world, ProtectionAction.ENTRY, RegionSubject.OWNERS, ProtectionDecision.ALLOW
+			).successful());
+			RegionEntryService ownerService = new RegionEntryService(engine, ProtectionBypass.none());
+
+			assertEquals(
+				ProtectionDecision.ALLOW,
+				ownerService.evaluate(player, position(-1), position(1)).decision()
+			);
+
+			ProtectionActor guard = ProtectionActor.player(UUID.randomUUID(), Set.of());
+			assertTrue(admin.setFlag(
+				"cell", world, ProtectionAction.ENTRY, RegionSubject.group("guard"), ProtectionDecision.ALLOW
+			).successful());
+			RegionEntryService groupService = new RegionEntryService(
+				engine,
+				ProtectionBypass.none(),
+				(actor, checkedWorld, group) ->
+					actor.playerId().equals(guard.playerId()) && group.equals("guard")
+			);
+
+			assertEquals(
+				ProtectionDecision.ALLOW,
+				groupService.evaluate(guard, position(-1), position(1)).decision()
+			);
 		}
 	}
 

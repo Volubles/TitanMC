@@ -1,18 +1,21 @@
 package com.voluble.titanMC.regions.admin;
 
 import com.voluble.titanMC.regions.model.RegionDefinition;
+import com.voluble.titanMC.regions.model.RegionAccessSet;
 import com.voluble.titanMC.regions.model.RegionGeometry;
 import com.voluble.titanMC.regions.model.RegionKey;
 import com.voluble.titanMC.regions.model.WorldId;
 import com.voluble.titanMC.regions.model.RegionTextFlag;
 import com.voluble.titanMC.regions.protection.model.ProtectionAction;
 import com.voluble.titanMC.regions.protection.model.ProtectionDecision;
+import com.voluble.titanMC.regions.protection.model.RegionSubject;
 import com.voluble.titanMC.regions.service.RegionEngine;
 import com.voluble.titanMC.regions.service.RegionMutationResult;
 
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 
 public final class RegionAdminService {
 
@@ -58,11 +61,47 @@ public final class RegionAdminService {
 		ProtectionAction action,
 		ProtectionDecision decision
 	) {
+		return setFlag(name, worldId, action, RegionSubject.EVERYONE, decision);
+	}
+
+	public RegionMutationResult setFlag(
+		String name,
+		WorldId worldId,
+		ProtectionAction action,
+		RegionSubject subject,
+		ProtectionDecision decision
+	) {
 		RegionDefinition existing = find(worldId, name);
 		if (existing == null) return notFound(name);
 		return regions.setFlags(
-			existing.id(), existing.revision(), existing.flags().with(action, decision)
+			existing.id(), existing.revision(), existing.flags().with(action, subject, decision)
 		).join();
+	}
+
+	public RegionMutationResult addOwner(String name, WorldId worldId, UUID playerId) {
+		return updateAccess(name, worldId, access -> access.withOwner(playerId));
+	}
+
+	public RegionMutationResult removeOwner(String name, WorldId worldId, UUID playerId) {
+		return updateAccess(name, worldId, access -> access.withoutOwner(playerId));
+	}
+
+	public RegionMutationResult addMember(String name, WorldId worldId, UUID playerId) {
+		return updateAccess(name, worldId, access -> access.withMember(playerId));
+	}
+
+	public RegionMutationResult removeMember(String name, WorldId worldId, UUID playerId) {
+		return updateAccess(name, worldId, access -> access.withoutMember(playerId));
+	}
+
+	public RegionMutationResult replaceAccess(
+		String name,
+		WorldId worldId,
+		RegionAccessSet access
+	) {
+		RegionDefinition existing = find(worldId, name);
+		if (existing == null) return notFound(name);
+		return regions.setAccess(existing.id(), existing.revision(), access).join();
 	}
 
 	public RegionMutationResult setPriority(String name, WorldId worldId, int priority) {
@@ -110,6 +149,20 @@ public final class RegionAdminService {
 			.distinct()
 			.sorted()
 			.toList();
+	}
+
+	private RegionMutationResult updateAccess(
+		String name,
+		WorldId worldId,
+		java.util.function.UnaryOperator<RegionAccessSet> update
+	) {
+		RegionDefinition existing = find(worldId, name);
+		if (existing == null) return notFound(name);
+		return regions.setAccess(
+			existing.id(),
+			existing.revision(),
+			Objects.requireNonNull(update.apply(existing.access()), "updated access")
+		).join();
 	}
 
 	private static RegionKey key(String name) {

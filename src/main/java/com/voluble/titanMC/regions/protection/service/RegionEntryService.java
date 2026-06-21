@@ -9,10 +9,13 @@ import com.voluble.titanMC.regions.protection.model.ProtectionActor;
 import com.voluble.titanMC.regions.protection.model.ProtectionDecision;
 import com.voluble.titanMC.regions.protection.model.ProtectionRequest;
 import com.voluble.titanMC.regions.protection.policy.ProtectionBypass;
+import com.voluble.titanMC.regions.protection.policy.RegionGroupProvider;
 import com.voluble.titanMC.regions.service.RegionEngine;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -21,10 +24,20 @@ public final class RegionEntryService {
 
 	private final RegionEngine regions;
 	private final ProtectionBypass bypass;
+	private final RegionGroupProvider groups;
 
 	public RegionEntryService(RegionEngine regions, ProtectionBypass bypass) {
+		this(regions, bypass, RegionGroupProvider.none());
+	}
+
+	public RegionEntryService(
+		RegionEngine regions,
+		ProtectionBypass bypass,
+		RegionGroupProvider groups
+	) {
 		this.regions = Objects.requireNonNull(regions, "regions");
 		this.bypass = Objects.requireNonNull(bypass, "bypass");
+		this.groups = Objects.requireNonNull(groups, "groups");
 	}
 
 	public Transition evaluate(ProtectionActor actor, BlockPosition from, BlockPosition to) {
@@ -81,10 +94,35 @@ public final class RegionEntryService {
 		List<RegionDefinition> entered,
 		List<RegionDefinition> exited
 	) {
-		List<RegionDecision> decisions = entered.stream()
-			.map(region -> new RegionDecision(region, region.flags().decision(ProtectionAction.ENTRY)))
-			.filter(decision -> decision.decision().explicit())
-			.toList();
+		LazyActor lazyActor = new LazyActor(actor);
+		Map<GroupKey, Boolean> groupMatches = new HashMap<>();
+		List<RegionDecision> decisions = new ArrayList<>();
+		try {
+			for (RegionDefinition region : entered) {
+				boolean requiresActor = region.flags().rules(ProtectionAction.ENTRY).keySet().stream()
+					.anyMatch(subject ->
+						!subject.equals(com.voluble.titanMC.regions.protection.model.RegionSubject.EVERYONE)
+					);
+				ProtectionActor evaluatedActor = requiresActor ? lazyActor.get() : null;
+				var rule = region.flags().resolve(
+					ProtectionAction.ENTRY,
+					region.access(),
+					evaluatedActor == null ? null : evaluatedActor.playerId(),
+					group -> groupMatches.computeIfAbsent(
+						new GroupKey(region.worldId(), group),
+						ignored -> groups.isInGroup(lazyActor.get(), region.worldId(), group)
+					)
+				);
+				rule.ifPresent(resolved -> decisions.add(
+					new RegionDecision(region, resolved.subject(), resolved.decision())
+				));
+			}
+		} catch (RuntimeException exception) {
+			return new Transition(
+				ProtectionDecision.DENY, Reason.ERROR, entered, exited, List.of(),
+				Optional.empty(), Optional.empty(), Optional.of("Region entry rule evaluation failed.")
+			);
+		}
 		for (int start = 0; start < decisions.size();) {
 			int priority = decisions.get(start).region().priority();
 			int end = start + 1;
@@ -96,7 +134,7 @@ public final class RegionEntryService {
 			if (decision == ProtectionDecision.DENY) {
 				try {
 					ProtectionRequest request = ProtectionRequest.at(
-						Objects.requireNonNull(actor.get(), "actor supplier result"),
+						lazyActor.get(),
 						ProtectionAction.ENTRY,
 						target
 					);
@@ -190,12 +228,35 @@ public final class RegionEntryService {
 		ERROR
 	}
 
-	public record RegionDecision(RegionDefinition region, ProtectionDecision decision) {
+	public record RegionDecision(
+		RegionDefinition region,
+		com.voluble.titanMC.regions.protection.model.RegionSubject subject,
+		ProtectionDecision decision
+	) {
 		public RegionDecision {
 			Objects.requireNonNull(region, "region");
+			Objects.requireNonNull(subject, "subject");
 			Objects.requireNonNull(decision, "decision");
 		}
 	}
+
+	private static final class LazyActor {
+		private final Supplier<ProtectionActor> supplier;
+		private ProtectionActor value;
+
+		private LazyActor(Supplier<ProtectionActor> supplier) {
+			this.supplier = Objects.requireNonNull(supplier, "supplier");
+		}
+
+		private ProtectionActor get() {
+			if (value == null) {
+				value = Objects.requireNonNull(supplier.get(), "actor supplier result");
+			}
+			return value;
+		}
+	}
+
+	private record GroupKey(com.voluble.titanMC.regions.model.WorldId worldId, String group) {}
 
 	public record Membership(
 		long version,
