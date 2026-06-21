@@ -46,7 +46,7 @@ public final class RankCommandModule implements CommandModule {
 			.aliases("ranks")
 			.description("Show or manage prison ranks")
 			.requiresAnyPermission(USE_PERMISSION, ADMIN_PERMISSION)
-			.executes(this::showOwnRank)
+			.executesPlayer((player, ctx) -> showOwnRank(player))
 			.literalExec("list", this::list)
 			.literal("info", node -> node
 				.requiresPermission(ADMIN_PERMISSION)
@@ -59,17 +59,11 @@ public final class RankCommandModule implements CommandModule {
 		registration.register(CommandTree.root("rankup")
 			.description("Purchase the next prison rank")
 			.requiresPermission(USE_PERMISSION)
-			.requiresPlayerExecutor()
-			.executes(this::rankup)
+			.executesPlayer((player, ctx) -> rankup(player))
 			.spec());
 	}
 
-	private int showOwnRank(MichelleCommandContext context) throws CommandSyntaxException {
-		CommandSender sender = context.sender();
-		if (!(sender instanceof Player player)) {
-			sender.sendMessage("Specify a player: /rank info <player>");
-			return CommandTree.ok();
-		}
+	private int showOwnRank(Player player) {
 		Optional<PlayerRank> rank = players.current(player.getUniqueId());
 		if (rank.isEmpty()) {
 			player.sendMessage("You do not have a rank yet.");
@@ -142,8 +136,7 @@ public final class RankCommandModule implements CommandModule {
 		return CommandTree.ok();
 	}
 
-	private int rankup(MichelleCommandContext context) throws CommandSyntaxException {
-		Player player = context.playerExecutor();
+	private int rankup(Player player) {
 		RankupResult result = rankups.rankup(player.getUniqueId());
 		switch (result) {
 			case RankupResult.Success success -> player.sendMessage(
