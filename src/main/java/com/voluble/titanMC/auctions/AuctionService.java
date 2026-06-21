@@ -325,6 +325,7 @@ public final class AuctionService implements AutoCloseable {
 		};
 		long expiry = lot.state() == AuctionState.FOR_SALE ? lot.saleExpiresAt() : lot.claimExpiresAt();
 		Map<String, String> values = Map.of(
+			"ward", lot.wardId().value(),
 			"price", Long.toString(lot.price()),
 			"buyer", lot.buyerName() == null ? "" : lot.buyerName(),
 			"time_left", shortTime(Math.max(0, expiry - System.currentTimeMillis()))
