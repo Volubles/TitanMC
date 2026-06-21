@@ -1,6 +1,7 @@
 package com.voluble.titanMC;
 
 import com.voluble.titanMC.auctions.AuctionListener;
+import com.voluble.titanMC.auctions.AuctionManagedBlockAccess;
 import com.voluble.titanMC.auctions.AuctionService;
 import com.voluble.titanMC.auctions.AuctionStorage;
 import com.voluble.titanMC.auctions.command.AuctionCommandModule;
@@ -46,6 +47,7 @@ import com.voluble.titanMC.regions.protection.bukkit.FluidFlowProtectionListener
 import com.voluble.titanMC.regions.protection.bukkit.HangingProtectionListener;
 import com.voluble.titanMC.regions.protection.bukkit.MobGriefProtectionListener;
 import com.voluble.titanMC.regions.protection.bukkit.MobSpawnProtectionListener;
+import com.voluble.titanMC.regions.protection.bukkit.ManagedBlockAccessRegistry;
 import com.voluble.titanMC.regions.protection.bukkit.PistonProtectionListener;
 import com.voluble.titanMC.regions.protection.bukkit.PortalProtectionListener;
 import com.voluble.titanMC.regions.protection.bukkit.TrustedFluidFlow;
@@ -97,6 +99,7 @@ public final class TitanMC extends JavaPlugin {
 	private PlayerRankService rankService;
 	private RankupService rankupService;
 	private AuctionService auctionService;
+	private ManagedBlockAccessRegistry managedBlockAccess;
 
 	@Override
 	public void onEnable() {
@@ -140,6 +143,7 @@ public final class TitanMC extends JavaPlugin {
 		economyManager = new EconomyManager(this);
 		if (!economyManager.initialize()) getLogger().warning("No Vault economy provider found; cell renting is disabled");
 		if (!initializeRanks()) return;
+		managedBlockAccess = new ManagedBlockAccessRegistry(getLogger());
 		if (!initializeProtection()) return;
 
 		// Mines
@@ -202,6 +206,7 @@ public final class TitanMC extends JavaPlugin {
 				rankConfiguration.catalog()
 			);
 			auctionService.start();
+			managedBlockAccess.register(new AuctionManagedBlockAccess(auctionService));
 			getServer().getPluginManager().registerEvents(new AuctionListener(this, auctionService), this);
 		} catch (Exception exception) {
 			getLogger().severe("Failed to initialize Auctions: " + exception.getMessage());
@@ -304,7 +309,10 @@ public final class TitanMC extends JavaPlugin {
 			),
 			this
 		);
-		getServer().getPluginManager().registerEvents(new BlockProtectionListener(protectionService), this);
+		getServer().getPluginManager().registerEvents(
+			new BlockProtectionListener(protectionService, managedBlockAccess),
+			this
+		);
 		TrustedFluidFlow trustedFluidFlow = new TrustedFluidFlow();
 		getServer().getPluginManager().registerEvents(new BucketProtectionListener(protectionService, trustedFluidFlow), this);
 		getServer().getPluginManager().registerEvents(new FluidFlowProtectionListener(protectionService, trustedFluidFlow), this);

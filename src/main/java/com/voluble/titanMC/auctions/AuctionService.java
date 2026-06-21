@@ -33,7 +33,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
-public final class AuctionService implements AutoCloseable {
+public final class AuctionService implements AuctionBlockAccess, AutoCloseable {
 	private final Plugin plugin;
 	private final AuctionStorage storage;
 	private final CellStorage cellStorage;
@@ -137,6 +137,17 @@ public final class AuctionService implements AutoCloseable {
 			AuctionPosition position = positions.get(lot.positionId());
 			return position != null && matches(block, position, true);
 		}).findFirst().orElse(null);
+	}
+
+	@Override
+	public boolean isAuctionSign(Block block) {
+		return atSign(block) != null;
+	}
+
+	@Override
+	public boolean mayOpenAuctionChest(Player player, Block block) {
+		AuctionLot lot = atChest(block);
+		return lot != null && canOpen(player, lot);
 	}
 
 	public boolean canOpen(Player player, AuctionLot lot) {
