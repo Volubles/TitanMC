@@ -26,13 +26,10 @@ import org.bukkit.scheduler.BukkitTask;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -66,6 +63,7 @@ public final class AuctionService implements AutoCloseable {
 	public void start() throws SQLException {
 		positions.putAll(storage.loadPositions());
 		auctions.putAll(index(storage.loadAuctions()));
+		validateStoredAssignments();
 		for (AuctionPosition position : positions.values()) {
 			if (auctions.values().stream().noneMatch(lot -> position.id().equals(lot.positionId()))) removeBlocks(position);
 		}
@@ -251,17 +249,31 @@ public final class AuctionService implements AutoCloseable {
 	}
 
 	private void assignQueued() throws SQLException {
-		Set<String> occupied = new HashSet<>();
-		for (AuctionLot lot : auctions.values()) if (lot.positionId() != null) occupied.add(lot.positionId());
-		List<AuctionPosition> available = positions.values().stream().filter(position -> !occupied.contains(position.id())).collect(java.util.stream.Collectors.toCollection(ArrayList::new));
-		Collections.shuffle(available);
-		for (AuctionLot lot : List.copyOf(auctions.values())) {
-			if (lot.state() != AuctionState.QUEUED || available.isEmpty()) continue;
-			AuctionPosition position = available.removeLast();
+		for (AuctionAssignmentPlanner.Assignment assignment : AuctionAssignmentPlanner.plan(
+			positions.values(), auctions.values(), ThreadLocalRandom.current()
+		)) {
+			AuctionLot lot = auctions.get(assignment.auctionId());
+			AuctionPosition position = positions.get(assignment.positionId());
 			AuctionLot assigned = lot.atPosition(position.id(), System.currentTimeMillis() + configuration.current().saleDurationMillis());
 			storage.saveAuction(assigned);
 			auctions.put(assigned.id(), assigned);
 			render(assigned, true);
+		}
+	}
+
+	private void validateStoredAssignments() {
+		for (AuctionLot lot : auctions.values()) {
+			if (lot.positionId() == null) continue;
+			AuctionPosition position = positions.get(lot.positionId());
+			if (position == null) {
+				throw new IllegalStateException("Auction " + lot.id() + " references unknown position " + lot.positionId());
+			}
+			if (!position.wardId().equals(lot.wardId())) {
+				throw new IllegalStateException(
+					"Auction " + lot.id() + " in ward " + lot.wardId()
+						+ " references position " + position.id() + " in ward " + position.wardId()
+				);
+			}
 		}
 	}
 
