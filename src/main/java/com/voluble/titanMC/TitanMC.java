@@ -9,6 +9,7 @@ import com.voluble.titanMC.auctions.config.AuctionConfigurationManager;
 import com.voluble.titanMC.cells.CellLeaseScheduler;
 import com.voluble.titanMC.cells.CellManager;
 import com.voluble.titanMC.cells.CellRentalService;
+import com.voluble.titanMC.cells.CellRentalEligibility;
 import com.voluble.titanMC.cells.CellResetService;
 import com.voluble.titanMC.cells.CellSignService;
 import com.voluble.titanMC.cells.CellTrackingListener;
@@ -169,6 +170,7 @@ public final class TitanMC extends JavaPlugin {
 			protectionService
 		);
 
+		CellRentalEligibility cellEligibility;
 		try {
 			cellManager = new CellManager(
 				new CellStorage(ComponentFiles.resolveData(getDataFolder().toPath(), "cells", "cells.db")),
@@ -176,6 +178,9 @@ public final class TitanMC extends JavaPlugin {
 				rankConfiguration.catalog()
 			);
 			cellManager.load();
+			cellEligibility = new CellRentalEligibility(
+				rankConfiguration.catalog(), cellsConfiguration.current().minimumRanksByWard()
+			);
 		} catch (Exception exception) {
 			getLogger().severe("Failed to initialize Cells: " + exception.getMessage());
 			getServer().getPluginManager().disablePlugin(this);
@@ -184,7 +189,9 @@ public final class TitanMC extends JavaPlugin {
 		CellResetService cellResets = new CellResetService(this, cellManager);
 		cellSignRenderer = new CellSignRenderer(this, cellManager, cellsConfiguration);
 		cellResets.stateListener(cellSignRenderer::refresh);
-		CellRentalService cellRentals = new CellRentalService(this, cellManager, economyManager.getEconomy(), cellSignRenderer);
+		CellRentalService cellRentals = new CellRentalService(
+			this, cellManager, economyManager.getEconomy(), cellSignRenderer, rankService, cellEligibility
+		);
 		CellManagementService cellManagement = new CellManagementService(this, cellManager, cellResets, cellSignRenderer, cellsConfiguration, economyManager.getEconomy());
 		CellSignService cellSigns = new CellSignService(this, cellManager, cellSignRenderer);
 		CellMenuService cellMenus = new CellMenuService(this, menuService, cellManager, cellRentals, cellManagement, cellsConfiguration);

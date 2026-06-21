@@ -126,6 +126,7 @@ public final class CellStorage implements AutoCloseable {
 					)
 					""");
 			statement.executeUpdate("CREATE INDEX IF NOT EXISTS idx_cell_blocks_cell ON cell_blocks(cell_id, lease_generation)");
+			statement.executeUpdate("CREATE UNIQUE INDEX IF NOT EXISTS idx_cell_leases_owner ON cell_leases(owner_uuid)");
 			statement.executeUpdate("""
 					CREATE TABLE IF NOT EXISTS cell_recovery_lots (
 					    id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -432,7 +433,14 @@ public final class CellStorage implements AutoCloseable {
 	}
 
 	private void upsertLease(CellLease lease) throws SQLException {
-		try (PreparedStatement s = connection.prepareStatement("INSERT OR REPLACE INTO cell_leases(cell_id,owner_uuid,generation,started_at,expires_at) VALUES(?,?,?,?,?)")) {
+		try (PreparedStatement s = connection.prepareStatement("""
+			INSERT INTO cell_leases(cell_id,owner_uuid,generation,started_at,expires_at) VALUES(?,?,?,?,?)
+			ON CONFLICT(cell_id) DO UPDATE SET
+			 owner_uuid=excluded.owner_uuid,
+			 generation=excluded.generation,
+			 started_at=excluded.started_at,
+			 expires_at=excluded.expires_at
+			""")) {
 			s.setString(1, lease.cellId());
 			s.setString(2, lease.ownerId().toString());
 			s.setLong(3, lease.generation());

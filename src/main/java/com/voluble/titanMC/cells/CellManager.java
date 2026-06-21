@@ -77,6 +77,15 @@ public final class CellManager implements AutoCloseable {
 		return leases.get(cellId);
 	}
 
+	public Optional<CellDefinition> ownedCell(UUID ownerId) {
+		Objects.requireNonNull(ownerId, "ownerId");
+		return leases.values().stream()
+			.filter(lease -> lease.ownerId().equals(ownerId))
+			.map(lease -> cells.get(lease.cellId()))
+			.filter(Objects::nonNull)
+			.findFirst();
+	}
+
 	public Collection<CellResetJob> resetJobs() {
 		return List.copyOf(resetJobs.values());
 	}
@@ -173,6 +182,9 @@ public final class CellManager implements AutoCloseable {
 
 	public CellLease planLease(String cellId, UUID ownerId) {
 		CellDefinition cell = Objects.requireNonNull(get(cellId), "Unknown cell: " + cellId);
+		if (ownedCell(ownerId).isPresent()) {
+			throw new IllegalStateException("You already rent a cell. Sell it back before renting another.");
+		}
 		if (!cell.enabled()) throw new IllegalStateException("Cell is disabled");
 		if (leases.containsKey(cell.id()) || resetJobs.containsKey(cell.id()))
 			throw new IllegalStateException("Cell is not available");

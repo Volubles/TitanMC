@@ -17,6 +17,7 @@ import java.util.UUID;
 import java.sql.DriverManager;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class CellStorageTest {
 	@TempDir Path directory;
@@ -96,6 +97,33 @@ class CellStorageTest {
 		try (CellStorage storage = new CellStorage(database)) {
 			CellRecoveryLot lot = storage.loadReadyRecoveryLots().join().getFirst();
 			assertEquals(WardId.of("d"), lot.wardId());
+		}
+	}
+
+	@Test
+	void playerCannotOwnTwoCellLeases() throws Exception {
+		Path database = directory.resolve("single-owner.db");
+		UUID world = UUID.randomUUID();
+		UUID owner = UUID.randomUUID();
+		CellDefinition first = new CellDefinition(
+			"first", WardId.of("e"), new RegionUtils.Cuboid(world, 0, 0, 0, 4, 4, 4),
+			500, 86400, 604800, true
+		);
+		CellDefinition second = new CellDefinition(
+			"second", WardId.of("e"), new RegionUtils.Cuboid(world, 10, 0, 0, 14, 4, 4),
+			500, 86400, 604800, true
+		);
+
+		try (CellStorage storage = new CellStorage(database)) {
+			storage.saveCell(first).join();
+			storage.saveCell(second).join();
+			storage.saveLease(new CellLease(first.id(), owner, 1, 1000, 2000)).join();
+
+			assertThrows(
+				java.util.concurrent.CompletionException.class,
+				() -> storage.saveLease(new CellLease(second.id(), owner, 1, 1000, 2000)).join()
+			);
+			assertEquals(first.id(), storage.loadLeases().get(first.id()).cellId());
 		}
 	}
 }
