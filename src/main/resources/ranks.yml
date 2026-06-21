@@ -1,0 +1,40 @@
+wards:
+  - id: E
+    display-name: E Ward
+    ranks:
+      - E4
+      - E3
+      - E2
+      - E1
+
+  - id: D
+    display-name: D Ward
+    ranks:
+      - D4
+      - D3
+      - D2
+      - D1
+
+  - id: C
+    display-name: C Ward
+    ranks:
+      - C4
+      - C3
+      - C2
+      - C1
+
+  - id: B
+    display-name: B Ward
+    ranks:
+      - B4
+      - B3
+      - B2
+      - B1
+
+  - id: A
+    display-name: A Ward
+    ranks:
+      - A4
+      - A3
+      - A2
+      - A1
