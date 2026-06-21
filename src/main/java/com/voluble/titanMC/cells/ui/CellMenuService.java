@@ -263,6 +263,7 @@ public final class CellMenuService implements Listener {
 		Map<String, String> values = new HashMap<>();
 		values.put("id", cell.id());
 		values.put("display_name", cell.displayName());
+		values.put("ward", cell.wardId().value());
 		values.put("price", Long.toString(cell.rentPrice()));
 		values.put("duration", duration(cell.rentDurationSeconds() * 1000L));
 		values.put("max_duration", duration(cell.maxRentDurationSeconds() * 1000L));

@@ -48,19 +48,19 @@ public record CellsConfiguration(
 	private static Map<String, CellMenuTemplate> defaults(FileConfiguration yaml) {
 		Map<String, CellMenuTemplate> menus = new LinkedHashMap<>();
 		menus.put("rental", menu(yaml, "rental", 3, "<dark_green>Rent {display_name}", Map.of(
-			"info", item(Material.CLOCK, 11, "<green><bold>{display_name}", "<gray>Price: <gold>${price}", "<gray>Duration: <white>{duration}"),
+			"info", item(Material.CLOCK, 11, "<green><bold>{display_name}", "<gray>Ward: <white>{ward}", "<gray>Price: <gold>${price}", "<gray>Duration: <white>{duration}"),
 			"confirm", item(Material.LIME_CONCRETE, 15, "<green><bold>Confirm rental", "<gray>Click to pay <gold>${price}"),
 			"close", item(Material.BARRIER, 22, "<red>Close")
 		)));
 		menus.put("management", menu(yaml, "management", 3, "<dark_green>{display_name}", Map.of(
-			"info", item(Material.CLOCK, 4, "<green><bold>{display_name}", "<gray>Time left: <yellow>{time_left}", "<gray>Members: <white>{member_count}"),
+			"info", item(Material.CLOCK, 4, "<green><bold>{display_name}", "<gray>Ward: <white>{ward}", "<gray>Time left: <yellow>{time_left}", "<gray>Members: <white>{member_count}"),
 			"extend", item(Material.EMERALD, 10, "<green><bold>Extend rent", "<gray>Time left: <yellow>{time_left}", "<gray>Cost: <gold>${price}", "<gray>Adds: <white>{duration}", "<gray>Maximum: <white>{max_duration}"),
 			"members", item(Material.PLAYER_HEAD, 14, "<aqua><bold>Manage members", "<gray>Add or remove access"),
 			"sellback", item(Material.RED_CONCRETE, 16, "<red><bold>Sell back cell", "<gray>This starts a full reset"),
 			"close", item(Material.BARRIER, 22, "<red>Close")
 		)));
 		menus.put("status", menu(yaml, "status", 3, "<dark_green>{display_name}", Map.of(
-			"info", item(Material.OAK_SIGN, 13, "<green><bold>{display_name}", "<gray>Owner: <white>{owner}", "<gray>Time left: <yellow>{time_left}", "{access}"),
+			"info", item(Material.OAK_SIGN, 13, "<green><bold>{display_name}", "<gray>Ward: <white>{ward}", "<gray>Owner: <white>{owner}", "<gray>Time left: <yellow>{time_left}", "{access}"),
 			"close", item(Material.BARRIER, 22, "<red>Close")
 		)));
 		menus.put("members", menu(yaml, "members", 6, "<dark_green>Members: {display_name}", Map.of(

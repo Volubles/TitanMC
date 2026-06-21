@@ -1,7 +1,7 @@
 signs:
   refresh-seconds: 30
   available:
-    - "<green><bold>LEDIG CELL"
+    - "<green><bold>AVAILABLE CELL"
     - "<white>{display_name}"
     - "<gold>{price}"
     - "<gray>{duration}"
@@ -9,35 +9,36 @@ signs:
     - "<green><bold>{display_name}"
     - "<white>{owner}"
     - "<yellow>{time_left}"
-    - "<gray>Högerklicka"
+    - "<gray>Right-click"
   resetting:
     - "<yellow><bold>{display_name}"
-    - "<gray>Återställs"
+    - "<gray>Resetting"
     - ""
-    - "<dark_gray>Vänta..."
+    - "<dark_gray>Please wait..."
 
 menus:
   rental:
     rows: 3
-    title: "<dark_green>Hyr {display_name}"
+    title: "<dark_green>Rent {display_name}"
     items:
       info:
         material: CLOCK
         slot: 11
         name: "<green><bold>{display_name}"
         lore:
-          - "<gray>Pris: <gold>${price}"
-          - "<gray>Hyrestid: <white>{duration}"
+          - "<gray>Ward: <white>{ward}"
+          - "<gray>Price: <gold>${price}"
+          - "<gray>Duration: <white>{duration}"
       confirm:
         material: LIME_CONCRETE
         slot: 15
-        name: "<green><bold>Bekräfta hyran"
+        name: "<green><bold>Confirm rental"
         lore:
-          - "<gray>Klicka för att betala <gold>${price}"
+          - "<gray>Click to pay <gold>${price}"
       close:
         material: BARRIER
         slot: 22
-        name: "<red>Stäng"
+        name: "<red>Close"
         lore: []
   management:
     rows: 3
@@ -48,33 +49,34 @@ menus:
         slot: 4
         name: "<green><bold>{display_name}"
         lore:
-          - "<gray>Tid kvar: <yellow>{time_left}"
-          - "<gray>Medlemmar: <white>{member_count}"
+          - "<gray>Ward: <white>{ward}"
+          - "<gray>Time left: <yellow>{time_left}"
+          - "<gray>Members: <white>{member_count}"
       extend:
         material: EMERALD
         slot: 10
-        name: "<green><bold>Förläng hyran"
+        name: "<green><bold>Extend rent"
         lore:
-          - "<gray>Tid kvar: <yellow>{time_left}"
-          - "<gray>Kostnad: <gold>${price}"
-          - "<gray>Lägger till: <white>{duration}"
-          - "<gray>Maxtid: <white>{max_duration}"
+          - "<gray>Time left: <yellow>{time_left}"
+          - "<gray>Cost: <gold>${price}"
+          - "<gray>Adds: <white>{duration}"
+          - "<gray>Maximum: <white>{max_duration}"
       members:
         material: PLAYER_HEAD
         slot: 14
-        name: "<aqua><bold>Hantera medlemmar"
+        name: "<aqua><bold>Manage members"
         lore:
-          - "<gray>Lägg till eller ta bort åtkomst"
+          - "<gray>Add or remove access"
       sellback:
         material: RED_CONCRETE
         slot: 16
-        name: "<red><bold>Sälj tillbaka cellen"
+        name: "<red><bold>Sell back cell"
         lore:
-          - "<gray>Detta startar en full återställning"
+          - "<gray>This starts a full reset"
       close:
         material: BARRIER
         slot: 22
-        name: "<red>Stäng"
+        name: "<red>Close"
         lore: []
   status:
     rows: 3
@@ -85,56 +87,57 @@ menus:
         slot: 13
         name: "<green><bold>{display_name}"
         lore:
-          - "<gray>Ägare: <white>{owner}"
-          - "<gray>Tid kvar: <yellow>{time_left}"
+          - "<gray>Ward: <white>{ward}"
+          - "<gray>Owner: <white>{owner}"
+          - "<gray>Time left: <yellow>{time_left}"
           - "{access}"
       close:
         material: BARRIER
         slot: 22
-        name: "<red>Stäng"
+        name: "<red>Close"
         lore: []
   members:
     rows: 6
-    title: "<dark_green>Medlemmar: {display_name}"
+    title: "<dark_green>Members: {display_name}"
     items:
       member:
         material: PLAYER_HEAD
         slot: 0
         name: "<white>{player}"
         lore:
-          - "<red>Klicka för att ta bort"
+          - "<red>Click to remove"
       add:
         material: LIME_CONCRETE
         slot: 45
-        name: "<green><bold>Lägg till medlem"
+        name: "<green><bold>Add member"
         lore:
-          - "<gray>Skriv ett användarnamn i chatten"
+          - "<gray>Enter a username in chat"
       back:
         material: ARROW
         slot: 49
-        name: "<yellow>Tillbaka"
+        name: "<yellow>Back"
         lore: []
       close:
         material: BARRIER
         slot: 53
-        name: "<red>Stäng"
+        name: "<red>Close"
         lore: []
   sellback:
     rows: 3
-    title: "<dark_red>Bekräfta återförsäljning"
+    title: "<dark_red>Confirm sellback"
     items:
       keep:
         material: LIME_CONCRETE
         slot: 11
-        name: "<green><bold>Behåll cellen"
+        name: "<green><bold>Keep cell"
         lore: []
       confirm:
         material: RED_CONCRETE
         slot: 15
-        name: "<red><bold>Sälj tillbaka permanent"
+        name: "<red><bold>Sell back permanently"
         lore:
-          - "<red>Alla items i cellen kommer att försvinna"
-          - "<gray>och säljas via Storage Auction House."
+          - "<red>All items in this cell will be removed"
+          - "<gray>and sold through the Storage Auction House."
 
 sellback:
   refund-percent: 0

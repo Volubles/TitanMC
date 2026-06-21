@@ -81,11 +81,12 @@ public final class CellSignRenderer {
 		String owner = lease == null ? "" : Bukkit.getOfflinePlayer(lease.ownerId()).getName();
 		if (owner == null && lease != null) owner = lease.ownerId().toString();
 		String parsed = template;
-		for (String key : List.of("id", "display_name", "price", "duration", "owner", "time_left", "member_count")) {
+		for (String key : List.of("id", "display_name", "ward", "price", "duration", "owner", "time_left", "member_count")) {
 			parsed = parsed.replace("{" + key + "}", "<" + key + ">");
 		}
 		return MiniMessage.miniMessage().deserialize(parsed,
 				Placeholder.unparsed("id", cell.id()), Placeholder.unparsed("display_name", cell.displayName()),
+				Placeholder.unparsed("ward", cell.wardId().value()),
 				Placeholder.unparsed("price", Long.toString(cell.rentPrice())),
 				Placeholder.unparsed("duration", duration(cell.rentDurationSeconds() * 1000L)),
 				Placeholder.unparsed("owner", owner),
