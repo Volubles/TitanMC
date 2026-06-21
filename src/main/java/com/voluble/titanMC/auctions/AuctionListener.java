@@ -1,6 +1,7 @@
 package com.voluble.titanMC.auctions;
 
 import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
 import org.bukkit.block.Block;
 import org.bukkit.block.Chest;
 import org.bukkit.event.EventHandler;
@@ -17,9 +18,12 @@ import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.inventory.InventoryAction;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.inventory.EquipmentSlot;
+
+import java.util.logging.Level;
 
 public final class AuctionListener implements Listener {
 	private final Plugin plugin;
@@ -53,9 +57,19 @@ public final class AuctionListener implements Listener {
 
 	@EventHandler
 	public void onBreak(BlockBreakEvent event) {
-		if (auctions.atChest(event.getBlock()) != null || auctions.atSign(event.getBlock()) != null) {
-			event.setCancelled(true);
-			event.getPlayer().sendMessage("Auction blocks cannot be broken.");
+		if (!protectedBlock(event.getBlock())) return;
+		event.setCancelled(true);
+		if (!mayDiscard(event.getPlayer())) {
+			event.getPlayer().sendMessage("Auction blocks can only be removed by an auction administrator in creative mode.");
+			return;
+		}
+		try {
+			if (auctions.discardAt(event.getBlock())) {
+				event.getPlayer().sendMessage("Auction permanently discarded.");
+			}
+		} catch (IllegalStateException exception) {
+			plugin.getLogger().log(Level.SEVERE, "Could not discard auction", exception);
+			event.getPlayer().sendMessage("The auction could not be removed. Check the server log.");
 		}
 	}
 
@@ -148,5 +162,9 @@ public final class AuctionListener implements Listener {
 
 	private boolean protectedBlock(Block block) {
 		return auctions.atChest(block) != null || auctions.atSign(block) != null;
+	}
+
+	static boolean mayDiscard(Player player) {
+		return player.getGameMode() == GameMode.CREATIVE && player.hasPermission("titanmc.auction.admin");
 	}
 }

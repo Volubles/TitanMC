@@ -158,6 +158,18 @@ public final class AuctionService implements AuctionBlockAccess, AutoCloseable {
 		};
 	}
 
+	public boolean discardAt(Block block) {
+		AuctionLot lot = atChest(block);
+		if (lot == null) lot = atSign(block);
+		if (lot == null) return false;
+		try {
+			delete(lot);
+			return true;
+		} catch (SQLException exception) {
+			throw new IllegalStateException("Could not discard auction", exception);
+		}
+	}
+
 	public void purchase(Player player, AuctionLot original) {
 		AuctionLot lot = auctions.get(original.id());
 		if (lot == null || lot.state() != AuctionState.FOR_SALE) {

@@ -46,6 +46,28 @@ class AuctionStorageTest {
 	}
 
 	@Test
+	void deletingAuctionPermanentlyRemovesItsItems() throws Exception {
+		Path database = directory.resolve("delete-auction.db");
+		try (AuctionStorage storage = new AuctionStorage(database)) {
+			storage.ingest(
+				new CellRecoveryLot(91, UUID.randomUUID(), WardId.of("e"), List.of(new byte[]{4, 5, 6})),
+				() -> 800
+			);
+			long auctionId = storage.loadAuctions().getFirst().id();
+
+			storage.deleteAuction(auctionId);
+
+			assertTrue(storage.loadAuctions().isEmpty());
+		}
+		try (var connection = java.sql.DriverManager.getConnection("jdbc:sqlite:" + database.toAbsolutePath());
+			 var statement = connection.createStatement();
+			 var result = statement.executeQuery("SELECT COUNT(*) FROM auction_items")) {
+			assertTrue(result.next());
+			assertEquals(0, result.getInt(1));
+		}
+	}
+
+	@Test
 	void stateAndRemainingItemsAreDurable() throws Exception {
 		Path database = directory.resolve("state.db");
 		AuctionPosition position = new AuctionPosition("slot", WardId.of("e"), UUID.randomUUID(), 3, 70, 4, BlockFace.NORTH);
