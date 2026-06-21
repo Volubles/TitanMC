@@ -9,6 +9,7 @@ import com.voluble.titanMC.cells.model.CellDefinition;
 import com.voluble.titanMC.regions.model.CuboidGeometry;
 import com.voluble.titanMC.regions.selection.SelectionException;
 import com.voluble.titanMC.regions.selection.WorldEditRegionSelection;
+import com.voluble.titanMC.ranks.model.WardId;
 import com.voluble.titanMC.util.RegionUtils;
 import io.voluble.michellelib.commands.CommandModule;
 import io.voluble.michellelib.commands.CommandRegistration;
@@ -93,6 +94,7 @@ public final class CellCommandModule implements CommandModule {
 			var bounds = cuboid.bounds();
 			CellDefinition cell = new CellDefinition(
 				context.arg("name", String.class),
+				WardId.of("e"),
 				new RegionUtils.Cuboid(
 					selected.worldId(),
 					bounds.minX(), bounds.minY(), bounds.minZ(),

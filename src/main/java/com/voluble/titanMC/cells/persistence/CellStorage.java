@@ -7,6 +7,7 @@ import com.voluble.titanMC.cells.model.CellResetJob;
 import com.voluble.titanMC.cells.model.CellSign;
 import com.voluble.titanMC.cells.model.CellRecoveryLot;
 import com.voluble.titanMC.util.RegionUtils;
+import com.voluble.titanMC.ranks.model.WardId;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -182,6 +183,7 @@ public final class CellStorage implements AutoCloseable {
 				CellDefinition cell = new CellDefinition(
 						result.getString("id"),
 						result.getString("display_name"),
+						WardId.of("e"),
 						new RegionUtils.Cuboid(worldId, result.getInt("min_x"), result.getInt("min_y"), result.getInt("min_z"), result.getInt("max_x"), result.getInt("max_y"), result.getInt("max_z")),
 						result.getLong("rent_price"), result.getLong("rent_duration_seconds"), result.getLong("max_rent_duration_seconds"), result.getInt("enabled") != 0
 				);

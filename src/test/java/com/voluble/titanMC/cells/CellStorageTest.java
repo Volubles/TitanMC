@@ -6,6 +6,7 @@ import com.voluble.titanMC.cells.model.TrackedCellBlock;
 import com.voluble.titanMC.cells.model.CellSign;
 import com.voluble.titanMC.cells.persistence.CellStorage;
 import com.voluble.titanMC.util.RegionUtils;
+import com.voluble.titanMC.ranks.model.WardId;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -20,7 +21,7 @@ class CellStorageTest {
 	@TempDir Path directory;
 	@Test void cellsLeasesAndTrackedBlocksSurviveRestart() throws Exception {
 		Path database=directory.resolve("cells.db"); UUID world=UUID.randomUUID(); UUID owner=UUID.randomUUID();
-		CellDefinition cell=new CellDefinition("a1",new RegionUtils.Cuboid(world,0,0,0,5,5,5),500,86400,604800,true);
+		CellDefinition cell=new CellDefinition("a1",WardId.of("e"),new RegionUtils.Cuboid(world,0,0,0,5,5,5),500,86400,604800,true);
 		CellLease lease=new CellLease("a1",owner,1,1000,2000);
 		TrackedCellBlock block=new TrackedCellBlock("a1",1,world,2,2,2);
 		UUID member=UUID.randomUUID();
@@ -29,7 +30,7 @@ class CellStorageTest {
 		try(CellStorage storage=new CellStorage(database)){assertEquals(cell,storage.loadCells().get("a1"));var leases=storage.loadLeases();assertEquals(lease,leases.get("a1"));assertEquals(java.util.Set.of(member),storage.loadMembers(leases).get("a1"));assertEquals(List.of(block),storage.loadBlocks());assertEquals(List.of(sign),storage.loadSigns());}
 	}
 	@Test void resetPreparationIsDurableAndCompletionIsAtomic() throws Exception {
-		Path database=directory.resolve("reset.db");UUID world=UUID.randomUUID();UUID owner=UUID.randomUUID();CellDefinition cell=new CellDefinition("a1",new RegionUtils.Cuboid(world,0,0,0,5,5,5),500,86400,604800,true);CellLease lease=new CellLease("a1",owner,3,1000,2000);TrackedCellBlock block=new TrackedCellBlock("a1",3,world,2,2,2);long lot;
+		Path database=directory.resolve("reset.db");UUID world=UUID.randomUUID();UUID owner=UUID.randomUUID();CellDefinition cell=new CellDefinition("a1",WardId.of("e"),new RegionUtils.Cuboid(world,0,0,0,5,5,5),500,86400,604800,true);CellLease lease=new CellLease("a1",owner,3,1000,2000);TrackedCellBlock block=new TrackedCellBlock("a1",3,world,2,2,2);long lot;
 		try(CellStorage storage=new CellStorage(database)){storage.saveCell(cell).join();storage.saveLease(lease).join();storage.addBlocks(List.of(block)).join();storage.beginReset(lease).join();lot=storage.createRecoveryLot(lease,List.of(new byte[]{1,2,3})).join();assertEquals(com.voluble.titanMC.cells.model.CellResetJob.Phase.PREPARED,storage.loadResetJobs().get("a1").phase());}
 		try(CellStorage storage=new CellStorage(database)){storage.completeReset("a1",3,lot).join();assertEquals(0,storage.loadLeases().size());assertEquals(0,storage.loadBlocks().size());assertEquals(0,storage.loadResetJobs().size());}
 	}
@@ -37,7 +38,7 @@ class CellStorageTest {
 		Path database = directory.resolve("recovery.db");
 		UUID world = UUID.randomUUID();
 		UUID owner = UUID.randomUUID();
-		CellDefinition cell = new CellDefinition("a1", new RegionUtils.Cuboid(world, 0, 0, 0, 5, 5, 5), 500, 86400, 604800, true);
+		CellDefinition cell = new CellDefinition("a1", WardId.of("e"), new RegionUtils.Cuboid(world, 0, 0, 0, 5, 5, 5), 500, 86400, 604800, true);
 		CellLease lease = new CellLease("a1", owner, 1, 1000, 2000);
 		try (CellStorage storage = new CellStorage(database)) {
 			storage.saveCell(cell).join();

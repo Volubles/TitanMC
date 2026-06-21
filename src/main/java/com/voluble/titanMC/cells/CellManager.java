@@ -96,7 +96,7 @@ public final class CellManager implements AutoCloseable {
 
 	public void setDisplayName(String cellId, String displayName) {
 		CellDefinition old = Objects.requireNonNull(get(cellId), "Unknown cell: " + cellId);
-		CellDefinition updated = new CellDefinition(old.id(), displayName, old.cuboid(), old.rentPrice(), old.rentDurationSeconds(), old.maxRentDurationSeconds(), old.enabled());
+		CellDefinition updated = new CellDefinition(old.id(), displayName, old.wardId(), old.cuboid(), old.rentPrice(), old.rentDurationSeconds(), old.maxRentDurationSeconds(), old.enabled());
 		storage.saveCell(updated).join();
 		cells.put(old.id(), updated);
 		byCuboid.put(old.cuboid(), updated);

@@ -1,5 +1,6 @@
 package com.voluble.titanMC.cells.model;
 
+import com.voluble.titanMC.ranks.model.WardId;
 import com.voluble.titanMC.util.RegionUtils;
 
 import java.util.Locale;
@@ -9,6 +10,7 @@ import java.util.regex.Pattern;
 public record CellDefinition(
 		String id,
 		String displayName,
+		WardId wardId,
 		RegionUtils.Cuboid cuboid,
 		long rentPrice,
 		long rentDurationSeconds,
@@ -24,6 +26,7 @@ public record CellDefinition(
 		if (displayName.isEmpty() || displayName.length() > 64) {
 			throw new IllegalArgumentException("Cell display name must contain 1-64 characters");
 		}
+		Objects.requireNonNull(wardId, "wardId");
 		Objects.requireNonNull(cuboid, "cuboid");
 		if (rentPrice < 0L) throw new IllegalArgumentException("rent price must not be negative");
 		if (rentDurationSeconds < 60L) throw new IllegalArgumentException("rent duration must be at least 60 seconds");
@@ -32,8 +35,16 @@ public record CellDefinition(
 		}
 	}
 
-	public CellDefinition(String id, RegionUtils.Cuboid cuboid, long rentPrice, long rentDurationSeconds, long maxRentDurationSeconds, boolean enabled) {
-		this(id, defaultDisplayName(id), cuboid, rentPrice, rentDurationSeconds, maxRentDurationSeconds, enabled);
+	public CellDefinition(
+		String id,
+		WardId wardId,
+		RegionUtils.Cuboid cuboid,
+		long rentPrice,
+		long rentDurationSeconds,
+		long maxRentDurationSeconds,
+		boolean enabled
+	) {
+		this(id, defaultDisplayName(id), wardId, cuboid, rentPrice, rentDurationSeconds, maxRentDurationSeconds, enabled);
 	}
 
 	private static String defaultDisplayName(String id) {
