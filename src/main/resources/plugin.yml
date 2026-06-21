@@ -20,7 +20,7 @@ commands:
   cell:
     aliases: [cells]
     description: Manage rentable cells
-    usage: /cell <create|delete|list|info|reset|sign|member>
+    usage: /cell <create|delete|list|info|displayname|reset|sign|member>
     permission: titanmc.cell.admin
 permissions:
   donatortools.give:

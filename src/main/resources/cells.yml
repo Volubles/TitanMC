@@ -1,0 +1,25 @@
+signs:
+  refresh-seconds: 30
+  available:
+    - "<green><bold>LEDIG CELL"
+    - "<white>{display_name}"
+    - "<gold>{price}"
+    - "<gray>{duration}"
+  rented:
+    - "<green><bold>{display_name}"
+    - "<white>{owner}"
+    - "<yellow>{time_left}"
+    - "<gray>Högerklicka"
+  resetting:
+    - "<yellow><bold>{display_name}"
+    - "<gray>Återställs"
+    - ""
+    - "<dark_gray>Vänta..."
+
+menus:
+  rental-title: "<dark_green>Hyr {display_name}"
+  management-title: "<dark_green>{display_name}"
+  members-title: "<dark_green>Medlemmar: {display_name}"
+
+sellback:
+  refund-percent: 0

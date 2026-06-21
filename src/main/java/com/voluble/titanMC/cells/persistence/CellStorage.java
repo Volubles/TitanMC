@@ -4,6 +4,7 @@ import com.voluble.titanMC.cells.model.CellDefinition;
 import com.voluble.titanMC.cells.model.CellLease;
 import com.voluble.titanMC.cells.model.TrackedCellBlock;
 import com.voluble.titanMC.cells.model.CellResetJob;
+import com.voluble.titanMC.cells.model.CellSign;
 import com.voluble.titanMC.util.RegionUtils;
 
 import java.nio.file.Files;
@@ -27,7 +28,7 @@ import java.util.concurrent.Executors;
 
 public final class CellStorage implements AutoCloseable {
 
-	private static final int SCHEMA_VERSION = 1;
+	private static final int SCHEMA_VERSION = 2;
 	private final Connection connection;
 	private final ExecutorService writer = Executors.newSingleThreadExecutor(
 		Thread.ofPlatform().name("titan-cell-writer").factory()
@@ -58,8 +59,9 @@ public final class CellStorage implements AutoCloseable {
 
 	private void initializeSchema() throws SQLException {
 		try (Statement statement = connection.createStatement()) {
+			int version;
 			try (ResultSet result = statement.executeQuery("PRAGMA user_version")) {
-				int version = result.next() ? result.getInt(1) : 0;
+				version = result.next() ? result.getInt(1) : 0;
 				if (version > SCHEMA_VERSION) {
 					throw new SQLException("Unsupported Cells database schema " + version);
 				}
@@ -67,6 +69,7 @@ public final class CellStorage implements AutoCloseable {
 			statement.executeUpdate("""
 				CREATE TABLE IF NOT EXISTS cells (
 				    id TEXT PRIMARY KEY NOT NULL,
+				    display_name TEXT NOT NULL,
 				    world_id TEXT NOT NULL,
 				    min_x INTEGER NOT NULL, min_y INTEGER NOT NULL, min_z INTEGER NOT NULL,
 				    max_x INTEGER NOT NULL, max_y INTEGER NOT NULL, max_z INTEGER NOT NULL,
@@ -75,6 +78,10 @@ public final class CellStorage implements AutoCloseable {
 				    enabled INTEGER NOT NULL
 				)
 				""");
+			if (version == 1) {
+				statement.executeUpdate("ALTER TABLE cells ADD COLUMN display_name TEXT");
+				statement.executeUpdate("UPDATE cells SET display_name=id WHERE display_name IS NULL");
+			}
 			statement.executeUpdate("""
 				CREATE TABLE IF NOT EXISTS cell_leases (
 				    cell_id TEXT PRIMARY KEY NOT NULL,
@@ -134,6 +141,15 @@ public final class CellStorage implements AutoCloseable {
 				    recovery_lot_id INTEGER
 				)
 				""");
+			statement.executeUpdate("""
+				CREATE TABLE IF NOT EXISTS cell_signs (
+				    world_id TEXT NOT NULL,
+				    x INTEGER NOT NULL, y INTEGER NOT NULL, z INTEGER NOT NULL,
+				    cell_id TEXT NOT NULL,
+				    PRIMARY KEY(world_id, x, y, z),
+				    FOREIGN KEY(cell_id) REFERENCES cells(id) ON DELETE CASCADE
+				)
+				""");
 			statement.execute("PRAGMA user_version = " + SCHEMA_VERSION);
 		}
 	}
@@ -145,6 +161,7 @@ public final class CellStorage implements AutoCloseable {
 				UUID worldId = UUID.fromString(result.getString("world_id"));
 				CellDefinition cell = new CellDefinition(
 					result.getString("id"),
+					result.getString("display_name"),
 					new RegionUtils.Cuboid(worldId, result.getInt("min_x"), result.getInt("min_y"), result.getInt("min_z"), result.getInt("max_x"), result.getInt("max_y"), result.getInt("max_z")),
 					result.getLong("rent_price"), result.getLong("rent_duration_seconds"), result.getInt("enabled") != 0
 				);
@@ -174,6 +191,7 @@ public final class CellStorage implements AutoCloseable {
 	}
 	public synchronized Map<String,java.util.Set<UUID>> loadMembers(Map<String,CellLease> leases) throws SQLException {Map<String,java.util.Set<UUID>> members=new LinkedHashMap<>();try(Statement s=connection.createStatement();ResultSet r=s.executeQuery("SELECT * FROM cell_members ORDER BY cell_id,player_uuid")){while(r.next()){String cellId=r.getString("cell_id");CellLease lease=leases.get(cellId);if(lease!=null&&lease.generation()==r.getLong("lease_generation"))members.computeIfAbsent(cellId,ignored->new java.util.LinkedHashSet<>()).add(UUID.fromString(r.getString("player_uuid")));}}return members;}
 	public synchronized Map<String,CellResetJob> loadResetJobs() throws SQLException { Map<String,CellResetJob> jobs=new LinkedHashMap<>(); try(Statement s=connection.createStatement();ResultSet r=s.executeQuery("SELECT * FROM cell_reset_jobs")){while(r.next()){Object value=r.getObject("recovery_lot_id");Long lot=value instanceof Number number?number.longValue():null; CellResetJob j=new CellResetJob(r.getString("cell_id"),r.getLong("lease_generation"),UUID.fromString(r.getString("owner_uuid")),CellResetJob.Phase.valueOf(r.getString("phase")),lot);jobs.put(j.cellId(),j);}}return jobs; }
+	public synchronized List<CellSign> loadSigns() throws SQLException { List<CellSign> signs=new ArrayList<>();try(Statement s=connection.createStatement();ResultSet r=s.executeQuery("SELECT * FROM cell_signs ORDER BY cell_id")){while(r.next())signs.add(new CellSign(r.getString("cell_id"),UUID.fromString(r.getString("world_id")),r.getInt("x"),r.getInt("y"),r.getInt("z")));}return signs;}
 
 	public CompletableFuture<Void> saveCell(CellDefinition cell) { return write(() -> upsertCell(cell)); }
 	public CompletableFuture<Void> deleteCell(String id) { return write(() -> execute("DELETE FROM cells WHERE id = ?", id)); }
@@ -186,6 +204,8 @@ public final class CellStorage implements AutoCloseable {
 	public CompletableFuture<Void> deleteBlocks(String cellId, long generation) { return write(() -> execute("DELETE FROM cell_blocks WHERE cell_id = ? AND lease_generation = ?", cellId, generation)); }
 	public CompletableFuture<Void> beginReset(CellLease lease) { return write(() -> execute("INSERT OR REPLACE INTO cell_reset_jobs VALUES(?,?,?,?,NULL)",lease.cellId(),lease.generation(),lease.ownerId().toString(),CellResetJob.Phase.COLLECTING.name())); }
 	public CompletableFuture<Void> completeReset(String cellId,long generation,long lotId) { return write(() -> completeResetTransaction(cellId,generation,lotId)); }
+	public CompletableFuture<Void> saveSign(CellSign sign){return write(()->execute("INSERT OR REPLACE INTO cell_signs(world_id,x,y,z,cell_id) VALUES(?,?,?,?,?)",sign.worldId().toString(),sign.x(),sign.y(),sign.z(),sign.cellId()));}
+	public CompletableFuture<Void> deleteSign(CellSign sign){return write(()->execute("DELETE FROM cell_signs WHERE world_id=? AND x=? AND y=? AND z=?",sign.worldId().toString(),sign.x(),sign.y(),sign.z()));}
 
 	public CompletableFuture<Long> createRecoveryLot(CellLease lease, List<byte[]> items) {
 		return CompletableFuture.supplyAsync(() -> {
@@ -203,13 +223,14 @@ public final class CellStorage implements AutoCloseable {
 
 	private void upsertCell(CellDefinition cell) throws SQLException {
 		try (PreparedStatement s = connection.prepareStatement("""
-			INSERT INTO cells VALUES(?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET
-			world_id=excluded.world_id,min_x=excluded.min_x,min_y=excluded.min_y,min_z=excluded.min_z,
+			INSERT INTO cells(id,display_name,world_id,min_x,min_y,min_z,max_x,max_y,max_z,rent_price,rent_duration_seconds,enabled)
+			VALUES(?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET
+			display_name=excluded.display_name,world_id=excluded.world_id,min_x=excluded.min_x,min_y=excluded.min_y,min_z=excluded.min_z,
 			max_x=excluded.max_x,max_y=excluded.max_y,max_z=excluded.max_z,
 			rent_price=excluded.rent_price,rent_duration_seconds=excluded.rent_duration_seconds,enabled=excluded.enabled
 			""")) {
 			RegionUtils.Cuboid c = cell.cuboid();
-			s.setString(1, cell.id()); s.setString(2, c.worldId.toString()); s.setInt(3, c.minX); s.setInt(4, c.minY); s.setInt(5, c.minZ); s.setInt(6, c.maxX); s.setInt(7, c.maxY); s.setInt(8, c.maxZ); s.setLong(9, cell.rentPrice()); s.setLong(10, cell.rentDurationSeconds()); s.setInt(11, cell.enabled() ? 1 : 0); s.executeUpdate();
+			s.setString(1, cell.id()); s.setString(2,cell.displayName());s.setString(3, c.worldId.toString()); s.setInt(4, c.minX); s.setInt(5, c.minY); s.setInt(6, c.minZ); s.setInt(7, c.maxX); s.setInt(8, c.maxY); s.setInt(9, c.maxZ); s.setLong(10, cell.rentPrice()); s.setLong(11, cell.rentDurationSeconds()); s.setInt(12, cell.enabled() ? 1 : 0); s.executeUpdate();
 		}
 	}
 

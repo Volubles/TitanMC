@@ -29,11 +29,12 @@ public final class CellManager implements AutoCloseable {
 	private final Map<BlockKey, TrackedCellBlock> tracked = new LinkedHashMap<>();
 	private final Map<String, CellResetJob> resetJobs = new LinkedHashMap<>();
 	private final Map<String, java.util.Set<UUID>> members = new LinkedHashMap<>();
+	private final Map<BlockKey, com.voluble.titanMC.cells.model.CellSign> signs = new LinkedHashMap<>();
 	private final RegionUtils.RegionIndex index = new RegionUtils.RegionIndex();
 
 	public CellManager(CellStorage storage, CellRegionService regions) { this.storage=Objects.requireNonNull(storage); this.regions=Objects.requireNonNull(regions); }
 	public void load() throws SQLException {
-		cells.clear(); cells.putAll(storage.loadCells()); leases.clear(); leases.putAll(storage.loadLeases());members.clear();members.putAll(storage.loadMembers(leases)); resetJobs.clear(); resetJobs.putAll(storage.loadResetJobs()); tracked.clear(); index.clear();byCuboid.clear();
+		cells.clear(); cells.putAll(storage.loadCells()); leases.clear(); leases.putAll(storage.loadLeases());members.clear();members.putAll(storage.loadMembers(leases)); resetJobs.clear(); resetJobs.putAll(storage.loadResetJobs()); tracked.clear();signs.clear();for(var sign:storage.loadSigns())signs.put(new BlockKey(sign.worldId(),sign.x(),sign.y(),sign.z()),sign); index.clear();byCuboid.clear();
 		for (CellDefinition cell : cells.values()) { index.add(cell.cuboid());byCuboid.put(cell.cuboid(),cell); regions.reconcile(cell); }
 		for (TrackedCellBlock block : storage.loadBlocks()) tracked.put(BlockKey.of(block), block);
 		for (CellLease lease : leases.values()) { CellDefinition cell=cells.get(lease.cellId()); if (cell!=null) regions.setAccess(cell, resetJobs.containsKey(cell.id())?RegionAccessSet.empty():RegionAccessSet.of(java.util.Set.of(lease.ownerId()), members.getOrDefault(cell.id(),java.util.Set.of()))); }
@@ -43,6 +44,10 @@ public final class CellManager implements AutoCloseable {
 	public CellLease lease(String cellId) { return leases.get(cellId); }
 	public Collection<CellResetJob> resetJobs(){return List.copyOf(resetJobs.values());}
 	public java.util.Set<UUID> members(String cellId){return java.util.Set.copyOf(members.getOrDefault(cellId,java.util.Set.of()));}
+	public Collection<com.voluble.titanMC.cells.model.CellSign> signs(){return List.copyOf(signs.values());}
+	public void registerSign(com.voluble.titanMC.cells.model.CellSign sign){Objects.requireNonNull(get(sign.cellId()),"Unknown cell: "+sign.cellId());storage.saveSign(sign).join();signs.put(new BlockKey(sign.worldId(),sign.x(),sign.y(),sign.z()),sign);}
+	public void unregisterSign(com.voluble.titanMC.cells.model.CellSign sign){storage.deleteSign(sign).join();signs.remove(new BlockKey(sign.worldId(),sign.x(),sign.y(),sign.z()));}
+	public void setDisplayName(String cellId,String displayName){CellDefinition old=Objects.requireNonNull(get(cellId),"Unknown cell: "+cellId);CellDefinition updated=new CellDefinition(old.id(),displayName,old.cuboid(),old.rentPrice(),old.rentDurationSeconds(),old.enabled());storage.saveCell(updated).join();cells.put(old.id(),updated);byCuboid.put(old.cuboid(),updated);}
 	public void addMember(String cellId,UUID playerId){CellLease lease=Objects.requireNonNull(leases.get(cellId),"Cell is not rented");if(lease.ownerId().equals(playerId))return;java.util.Set<UUID> updated=new java.util.LinkedHashSet<>(members.getOrDefault(cellId,java.util.Set.of()));updated.add(playerId);storage.addMember(cellId,lease.generation(),playerId).join();members.put(cellId,updated);regions.setAccess(cells.get(cellId),RegionAccessSet.of(java.util.Set.of(lease.ownerId()),updated));}
 	public void removeMember(String cellId,UUID playerId){CellLease lease=Objects.requireNonNull(leases.get(cellId),"Cell is not rented");java.util.Set<UUID> updated=new java.util.LinkedHashSet<>(members.getOrDefault(cellId,java.util.Set.of()));updated.remove(playerId);storage.removeMember(cellId,lease.generation(),playerId).join();members.put(cellId,updated);regions.setAccess(cells.get(cellId),RegionAccessSet.of(java.util.Set.of(lease.ownerId()),updated));}
 	public CellDefinition at(Location location) { RegionUtils.Cuboid c=index.getFirstAt(location); return c==null?null:byCuboid.get(c); }

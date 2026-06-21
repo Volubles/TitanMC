@@ -7,9 +7,11 @@ import com.voluble.titanMC.cells.CellResetService;
 import com.voluble.titanMC.cells.CellSignService;
 import com.voluble.titanMC.cells.CellTrackingListener;
 import com.voluble.titanMC.cells.command.CellCommandModule;
+import com.voluble.titanMC.cells.config.CellsConfigurationManager;
 import com.voluble.titanMC.cells.persistence.CellStorage;
 import com.voluble.titanMC.cells.region.CellProtectionPolicy;
 import com.voluble.titanMC.cells.region.CellRegionService;
+import com.voluble.titanMC.cells.CellSignRenderer;
 import com.voluble.titanMC.managers.ConfigManager;
 import com.voluble.titanMC.donatortools.DonatorToolsService;
 import com.voluble.titanMC.donatortools.command.DonatorToolsCommandModule;
@@ -70,6 +72,8 @@ public final class TitanMC extends JavaPlugin {
 	private RegionGroupProvider regionGroups = RegionGroupProvider.none();
 	private CellManager cellManager;
 	private CellLeaseScheduler cellLeaseScheduler;
+	private CellSignRenderer cellSignRenderer;
+	private CellsConfigurationManager cellsConfiguration;
 
 	@Override
 	public void onEnable() {
@@ -96,8 +100,10 @@ public final class TitanMC extends JavaPlugin {
 
 		// Register component configs
 		donatorToolsConfiguration = new DonatorToolsConfigurationManager(this);
+		cellsConfiguration = new CellsConfigurationManager(this);
 		try {
 			configManager.registerComponent(donatorToolsConfiguration);
+			configManager.registerComponent(cellsConfiguration);
 		} catch (IllegalArgumentException | IllegalStateException exception) {
 			getLogger().severe("Invalid donator tools configuration: " + exception.getMessage());
 			getServer().getPluginManager().disablePlugin(this);
@@ -139,10 +145,12 @@ public final class TitanMC extends JavaPlugin {
 			return;
 		}
 		CellResetService cellResets = new CellResetService(this, cellManager);
+		cellSignRenderer = new CellSignRenderer(this, cellManager, cellsConfiguration);
 		CellRentalService cellRentals = new CellRentalService(this, cellManager, economyManager.getEconomy());
-		CellSignService cellSigns = new CellSignService(this, cellManager, cellRentals);
+		CellSignService cellSigns = new CellSignService(this, cellManager, cellRentals, cellSignRenderer);
 		getServer().getPluginManager().registerEvents(new CellTrackingListener(cellManager), this);
 		getServer().getPluginManager().registerEvents(cellSigns, this);
+		cellSignRenderer.start();
 		cellResets.resume();
 		cellLeaseScheduler = new CellLeaseScheduler(this, cellManager, cellResets);
 		cellLeaseScheduler.start();
@@ -235,6 +243,7 @@ public final class TitanMC extends JavaPlugin {
 		if (menuService != null) menuService.shutdown();
 		if (mineScheduler != null) mineScheduler.stop();
 		if (cellLeaseScheduler != null) cellLeaseScheduler.stop();
+		if (cellSignRenderer != null) cellSignRenderer.stop();
 		if (mineManager != null) mineManager.close();
 		if (cellManager != null) {
 			try { cellManager.close(); }
