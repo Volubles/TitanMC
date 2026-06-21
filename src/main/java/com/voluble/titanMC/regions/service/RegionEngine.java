@@ -193,7 +193,7 @@ public final class RegionEngine implements AutoCloseable {
 		RegionAccessSet access
 	) {
 		Objects.requireNonNull(access, "access");
-		return setSecurity(id, expectedRevision, access, null);
+		return updateSecurity(id, expectedRevision, access, null);
 	}
 
 	public CompletableFuture<RegionMutationResult> setSecurity(
@@ -203,6 +203,16 @@ public final class RegionEngine implements AutoCloseable {
 		RegionFlagSet flags
 	) {
 		Objects.requireNonNull(access, "access");
+		Objects.requireNonNull(flags, "flags");
+		return updateSecurity(id, expectedRevision, access, flags);
+	}
+
+	private CompletableFuture<RegionMutationResult> updateSecurity(
+		RegionId id,
+		long expectedRevision,
+		RegionAccessSet access,
+		RegionFlagSet flags
+	) {
 		return submit(() -> {
 			RegionDefinition existing = index.find(id);
 			if (existing == null) return failure(RegionMutationResult.Reason.NOT_FOUND, "Region does not exist: " + id);

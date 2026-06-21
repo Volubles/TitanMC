@@ -4,10 +4,12 @@ import com.voluble.titanMC.regions.model.BlockPosition;
 import com.voluble.titanMC.regions.index.RegionIndexSnapshot;
 import com.voluble.titanMC.regions.model.RegionDefinition;
 import com.voluble.titanMC.regions.model.RegionTextFlag;
+import com.voluble.titanMC.regions.model.WorldId;
 import com.voluble.titanMC.regions.protection.model.ProtectionAction;
 import com.voluble.titanMC.regions.protection.model.ProtectionActor;
 import com.voluble.titanMC.regions.protection.model.ProtectionDecision;
 import com.voluble.titanMC.regions.protection.model.ProtectionRequest;
+import com.voluble.titanMC.regions.protection.model.RegionSubject;
 import com.voluble.titanMC.regions.protection.policy.ProtectionBypass;
 import com.voluble.titanMC.regions.protection.policy.RegionGroupProvider;
 import com.voluble.titanMC.regions.service.RegionEngine;
@@ -101,7 +103,7 @@ public final class RegionEntryService {
 			for (RegionDefinition region : entered) {
 				boolean requiresActor = region.flags().rules(ProtectionAction.ENTRY).keySet().stream()
 					.anyMatch(subject ->
-						!subject.equals(com.voluble.titanMC.regions.protection.model.RegionSubject.EVERYONE)
+						!subject.equals(RegionSubject.EVERYONE)
 					);
 				ProtectionActor evaluatedActor = requiresActor ? lazyActor.get() : null;
 				var rule = region.flags().resolve(
@@ -230,7 +232,7 @@ public final class RegionEntryService {
 
 	public record RegionDecision(
 		RegionDefinition region,
-		com.voluble.titanMC.regions.protection.model.RegionSubject subject,
+		RegionSubject subject,
 		ProtectionDecision decision
 	) {
 		public RegionDecision {
@@ -256,7 +258,7 @@ public final class RegionEntryService {
 		}
 	}
 
-	private record GroupKey(com.voluble.titanMC.regions.model.WorldId worldId, String group) {}
+	private record GroupKey(WorldId worldId, String group) {}
 
 	public record Membership(
 		long version,

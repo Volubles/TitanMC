@@ -222,6 +222,24 @@ class RegionEnginePersistenceTest {
 		}
 	}
 
+	@Test
+	void schemaSixFlagsMigrateToEveryoneScopeWithoutChangingBehavior() throws Exception {
+		Path database = temporaryDirectory.resolve("schema-six.db");
+		WorldId world = new WorldId(UUID.randomUUID());
+		RegionKey key = RegionKey.of("custom", "legacy");
+		createSchemaSixDatabaseWithFlag(database, world, key);
+
+		try (RegionEngine engine = RegionEngine.open(database)) {
+			RegionDefinition stored = engine.find(world, key);
+			assertEquals(
+				ProtectionDecision.DENY,
+				stored.flags().decision(ProtectionAction.BLOCK_BREAK, RegionSubject.EVERYONE)
+			);
+			assertTrue(stored.access().owners().isEmpty());
+			assertTrue(stored.access().members().isEmpty());
+		}
+	}
+
 	private static void createEmptySchemaFiveDatabase(Path database) throws Exception {
 		Class.forName("org.sqlite.JDBC");
 		try (var connection = DriverManager.getConnection("jdbc:sqlite:" + database);
@@ -284,6 +302,43 @@ class RegionEnginePersistenceTest {
 				)
 				""");
 			statement.execute("PRAGMA user_version = 5");
+		}
+	}
+
+	private static void createSchemaSixDatabaseWithFlag(
+		Path database,
+		WorldId world,
+		RegionKey key
+	) throws Exception {
+		createEmptySchemaFiveDatabase(database);
+		String id = UUID.randomUUID().toString();
+		try (var connection = DriverManager.getConnection("jdbc:sqlite:" + database);
+			 Statement statement = connection.createStatement()) {
+			statement.executeUpdate("""
+				CREATE TABLE region_text_flags (
+				    region_id TEXT NOT NULL,
+				    text_flag TEXT NOT NULL,
+				    value TEXT NOT NULL,
+				    PRIMARY KEY(region_id, text_flag),
+				    FOREIGN KEY(region_id) REFERENCES regions(id) ON DELETE CASCADE
+				)
+				""");
+			long now = System.currentTimeMillis();
+			statement.executeUpdate(
+				"INSERT INTO regions(id, world_id, namespace, name, priority, revision, created_at, updated_at) VALUES ('"
+					+ id + "', '" + world + "', '" + key.namespace() + "', '" + key.name()
+					+ "', 100, 1, " + now + ", " + now + ")"
+			);
+			statement.executeUpdate(
+				"INSERT INTO region_geometries(region_id, geometry_type, min_x, min_y, min_z, "
+					+ "max_x_exclusive, max_y_exclusive, max_z_exclusive) VALUES ('"
+					+ id + "', 'CUBOID', 0, 0, 0, 16, 16, 16)"
+			);
+			statement.executeUpdate(
+				"INSERT INTO region_flags(region_id, action, decision) VALUES ('"
+					+ id + "', 'BLOCK_BREAK', 'DENY')"
+			);
+			statement.execute("PRAGMA user_version = 6");
 		}
 	}
 }

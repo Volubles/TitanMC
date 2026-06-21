@@ -1,5 +1,7 @@
 package com.voluble.titanMC.regions.protection.model;
 
+import com.voluble.titanMC.regions.model.RegionAccessSet;
+
 import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -119,7 +121,7 @@ public final class RegionFlagSet {
 
 	public Optional<ResolvedRule> resolve(
 		ProtectionAction action,
-		com.voluble.titanMC.regions.model.RegionAccessSet access,
+		RegionAccessSet access,
 		UUID playerId,
 		Predicate<String> groupMembership
 	) {
@@ -148,7 +150,7 @@ public final class RegionFlagSet {
 
 	private static boolean matches(
 		RegionSubject subject,
-		com.voluble.titanMC.regions.model.RegionAccessSet access,
+		RegionAccessSet access,
 		UUID playerId,
 		Predicate<String> groupMembership
 	) {
