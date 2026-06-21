@@ -179,7 +179,6 @@ public final class CellStorage implements AutoCloseable {
 	public CompletableFuture<Void> removeBlocks(Collection<TrackedCellBlock> blocks) { return write(() -> deleteBlocks(blocks)); }
 	public CompletableFuture<Void> deleteBlocks(String cellId, long generation) { return write(() -> execute("DELETE FROM cell_blocks WHERE cell_id = ? AND lease_generation = ?", cellId, generation)); }
 	public CompletableFuture<Void> beginReset(CellLease lease) { return write(() -> execute("INSERT OR REPLACE INTO cell_reset_jobs VALUES(?,?,?,?,NULL)",lease.cellId(),lease.generation(),lease.ownerId().toString(),CellResetJob.Phase.COLLECTING.name())); }
-	public CompletableFuture<Void> markResetPrepared(String cellId,long lotId) { return write(() -> execute("UPDATE cell_reset_jobs SET phase=?, recovery_lot_id=? WHERE cell_id=?",CellResetJob.Phase.PREPARED.name(),lotId,cellId)); }
 	public CompletableFuture<Void> completeReset(String cellId,long generation,long lotId) { return write(() -> completeResetTransaction(cellId,generation,lotId)); }
 
 	public CompletableFuture<Long> createRecoveryLot(CellLease lease, List<byte[]> items) {
