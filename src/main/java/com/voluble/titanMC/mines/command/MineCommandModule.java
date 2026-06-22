@@ -94,16 +94,14 @@ public final class MineCommandModule implements CommandModule {
 						.argument("name", Args.word(), nameNode -> nameNode
 							.suggests(mineNames)
 							.argument("template", Args.word(), templateId -> templateId
-								.executes(this::handleTemplateCapture))))
-					.literal("use", useNode -> useNode
-						.argument("name", Args.word(), nameNode -> nameNode
-							.suggests(mineNames)
+								.executes(this::handleTemplateCapture)))))
+				.literal("resetmode", modeNode -> modeNode
+					.argument("name", Args.word(), nameNode -> nameNode
+						.suggests(mineNames)
+						.literalExec("palette", this::handlePaletteReset)
+						.literal("template", templateNode -> templateNode
 							.argument("template", Args.word(), templateId -> templateId
-								.executes(this::handleTemplateUse))))
-					.literal("palette", paletteNode -> paletteNode
-						.argument("name", Args.word(), nameNode -> nameNode
-							.suggests(mineNames)
-							.executes(this::handlePaletteReset))))
+								.executes(this::handleTemplateUse)))))
 				.literal("delete", delNode -> delNode
 					.argument("name", Args.word(), nameNode -> nameNode
 						.suggests(mineNames)
