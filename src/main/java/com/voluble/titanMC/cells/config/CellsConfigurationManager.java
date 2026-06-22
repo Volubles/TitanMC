@@ -41,4 +41,15 @@ public final class CellsConfigurationManager implements ConfigManager.ComponentC
 	}
 
 	public CellsConfiguration current() { return current.get(); }
+
+	public void consumeEmptyDatabaseRegionCleanupConfirmation() {
+		YamlConfiguration yaml = YamlConfiguration.loadConfiguration(path.toFile());
+		yaml.set("recovery.confirm-empty-database-region-cleanup", false);
+		try {
+			yaml.save(path.toFile());
+		} catch (Exception exception) {
+			throw new IllegalStateException("Could not reset Cells recovery confirmation", exception);
+		}
+		reload();
+	}
 }

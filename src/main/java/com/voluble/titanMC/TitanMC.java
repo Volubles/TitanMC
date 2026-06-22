@@ -179,12 +179,28 @@ public final class TitanMC extends JavaPlugin {
 
 		WardRankRequirements cellEligibility;
 		try {
+			java.nio.file.Path cellDatabase = ComponentFiles.resolveData(
+				getDataFolder().toPath(), "cells", "cells.db"
+			);
+			boolean existingCellDatabase = java.nio.file.Files.isRegularFile(cellDatabase);
+			CellRegionService cellRegions = new CellRegionService(regionEngine);
+			boolean confirmedEmptyCleanup = cellsConfiguration.current().confirmEmptyDatabaseRegionCleanup();
+			if (!existingCellDatabase && cellRegions.hasManagedRegions() && !confirmedEmptyCleanup) {
+				throw new IllegalStateException(
+					"cells.db is missing while managed cell regions still exist. Restore the database or set "
+						+ "recovery.confirm-empty-database-region-cleanup=true in cells.yml for one startup."
+				);
+			}
 			cellManager = new CellManager(
-				new CellStorage(ComponentFiles.resolveData(getDataFolder().toPath(), "cells", "cells.db")),
-				new CellRegionService(regionEngine),
+				new CellStorage(cellDatabase),
+				cellRegions,
 				rankConfiguration.catalog()
 			);
 			cellManager.load();
+			if (!existingCellDatabase && confirmedEmptyCleanup) {
+				cellsConfiguration.consumeEmptyDatabaseRegionCleanupConfirmation();
+				getLogger().warning("Consumed one-shot confirmation after reconciling orphaned cell regions");
+			}
 			cellEligibility = new WardRankRequirements(
 				rankConfiguration.catalog(), cellsConfiguration.current().minimumRanksByWard()
 			);

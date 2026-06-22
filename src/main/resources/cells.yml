@@ -6,6 +6,10 @@ rent-requirements:
     B: B3
     A: A3
 
+recovery:
+  # One-shot confirmation used only when a new empty cells.db meets existing cell regions.
+  confirm-empty-database-region-cleanup: false
+
 signs:
   refresh-seconds: 30
   available:

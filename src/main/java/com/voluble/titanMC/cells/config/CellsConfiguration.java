@@ -17,7 +17,8 @@ public record CellsConfiguration(
 	List<String> resettingSign,
 	Map<String, CellMenuTemplate> menus,
 	Map<WardId, RankId> minimumRanksByWard,
-	int sellbackRefundPercent
+	int sellbackRefundPercent,
+	boolean confirmEmptyDatabaseRegionCleanup
 ) {
 	public CellsConfiguration {
 		availableSign = lines(availableSign, "available");
@@ -40,7 +41,8 @@ public record CellsConfiguration(
 			yaml.getStringList("signs.resetting"),
 			menus,
 			minimumRanks(yaml),
-			yaml.getInt("sellback.refund-percent", 0)
+			yaml.getInt("sellback.refund-percent", 0),
+			yaml.getBoolean("recovery.confirm-empty-database-region-cleanup", false)
 		);
 	}
 
