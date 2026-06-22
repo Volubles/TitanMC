@@ -15,9 +15,11 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.UUID;
 import java.sql.DriverManager;
+import java.sql.SQLException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class CellStorageTest {
 	@TempDir Path directory;
@@ -125,5 +127,34 @@ class CellStorageTest {
 			);
 			assertEquals(first.id(), storage.loadLeases().get(first.id()).cellId());
 		}
+	}
+
+	@Test
+	void duplicateLeasePreflightIdentifiesOwnerAndCells() throws Exception {
+		Path database = directory.resolve("duplicate-owner.db");
+		UUID owner = UUID.randomUUID();
+		Class.forName("org.sqlite.JDBC");
+		try (var connection = DriverManager.getConnection("jdbc:sqlite:" + database);
+			 var statement = connection.createStatement()) {
+			statement.executeUpdate("""
+				CREATE TABLE cell_leases (
+				 cell_id TEXT PRIMARY KEY NOT NULL,
+				 owner_uuid TEXT NOT NULL,
+				 generation INTEGER NOT NULL,
+				 started_at INTEGER NOT NULL,
+				 expires_at INTEGER NOT NULL
+				)
+				""");
+			statement.executeUpdate(
+				"INSERT INTO cell_leases VALUES('e-01','" + owner + "',1,1000,2000),"
+					+ "('d-04','" + owner + "',1,1000,2000)"
+			);
+		}
+
+		SQLException failure = assertThrows(SQLException.class, () -> new CellStorage(database));
+
+		assertTrue(failure.getMessage().contains(owner.toString()));
+		assertTrue(failure.getMessage().contains("e-01"));
+		assertTrue(failure.getMessage().contains("d-04"));
 	}
 }

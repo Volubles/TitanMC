@@ -46,8 +46,17 @@ public final class CellStorage implements AutoCloseable {
 			throw new SQLException("Failed to prepare Cells database", exception);
 		}
 		connection = DriverManager.getConnection("jdbc:sqlite:" + databasePath.toAbsolutePath());
-		configure();
-		initializeSchema();
+		try {
+			configure();
+			initializeSchema();
+		} catch (SQLException failure) {
+			try {
+				connection.close();
+			} catch (SQLException closeFailure) {
+				failure.addSuppressed(closeFailure);
+			}
+			throw failure;
+		}
 	}
 
 	private void configure() throws SQLException {
@@ -126,6 +135,7 @@ public final class CellStorage implements AutoCloseable {
 					)
 					""");
 			statement.executeUpdate("CREATE INDEX IF NOT EXISTS idx_cell_blocks_cell ON cell_blocks(cell_id, lease_generation)");
+			requireUniqueLeaseOwners();
 			statement.executeUpdate("CREATE UNIQUE INDEX IF NOT EXISTS idx_cell_leases_owner ON cell_leases(owner_uuid)");
 			statement.executeUpdate("""
 					CREATE TABLE IF NOT EXISTS cell_recovery_lots (
@@ -175,6 +185,26 @@ public final class CellStorage implements AutoCloseable {
 					)
 					""");
 			statement.execute("PRAGMA user_version = " + SCHEMA_VERSION);
+		}
+	}
+
+	private void requireUniqueLeaseOwners() throws SQLException {
+		List<String> duplicates = new ArrayList<>();
+		try (Statement statement = connection.createStatement(); ResultSet result = statement.executeQuery("""
+			SELECT owner_uuid, GROUP_CONCAT(cell_id, ', ') AS cell_ids
+			FROM cell_leases
+			GROUP BY owner_uuid
+			HAVING COUNT(*) > 1
+			ORDER BY owner_uuid
+			""")) {
+			while (result.next()) {
+				duplicates.add(result.getString("owner_uuid") + " has active leases: " + result.getString("cell_ids"));
+			}
+		}
+		if (!duplicates.isEmpty()) {
+			throw new SQLException(
+				"Duplicate cell lease owners must be resolved before Cells can start: " + String.join("; ", duplicates)
+			);
 		}
 	}
 
