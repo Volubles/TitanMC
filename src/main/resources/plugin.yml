@@ -10,7 +10,7 @@ commands:
     permission: donatortools.give
   mine:
     description: Manage mines
-    usage: /mine <list|create|redefine|setinterval|addblock|removeblock|forcereset|delete>
+    usage: /mine <list|create|redefine|setinterval|addblock|removeblock|template|forcereset|delete>
     permission: titanmc.mine.admin
   region:
     description: Manage protection regions

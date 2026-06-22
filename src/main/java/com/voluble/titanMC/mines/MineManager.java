@@ -3,6 +3,7 @@ package com.voluble.titanMC.mines;
 import com.voluble.titanMC.TitanMC;
 import com.voluble.titanMC.mines.regions.MineRegionService;
 import com.voluble.titanMC.mines.storage.MineStorage;
+import com.voluble.titanMC.mines.template.MineTemplateService;
 import com.voluble.titanMC.util.RegionUtils;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -15,6 +16,7 @@ public final class MineManager {
 	private final Plugin plugin;
 	private final MineStorage storage;
 	private final MineRegionService regions;
+	private final MineTemplateService templates;
 	private final Map<String, Mine> minesByName = new LinkedHashMap<>();
 	private final Map<RegionUtils.Cuboid, Mine> cuboidToMine = new HashMap<>();
 	private final RegionUtils.RegionIndex regionIndex = new RegionUtils.RegionIndex();
@@ -23,6 +25,7 @@ public final class MineManager {
 		this.plugin = Objects.requireNonNull(plugin);
 		this.storage = new MineStorage(plugin);
 		this.regions = Objects.requireNonNull(regions, "regions");
+		this.templates = new MineTemplateService(plugin, plugin.getDataFolder().toPath().resolve("mines").resolve("templates"));
 	}
 
 	public void load() {
@@ -31,6 +34,14 @@ public final class MineManager {
 		regionIndex.clear();
 		// Storage
 		Map<String, Mine> loaded = storage.loadAll();
+		for (Mine mine : loaded.values()) {
+			if (mine.getResetDefinition() instanceof MineResetDefinition.Template template
+				&& !templates.storage().exists(template.templateId())) {
+				throw new IllegalStateException(
+					"Mine " + mine.getName() + " references missing template " + template.templateId()
+				);
+			}
+		}
 		regions.reconcile(loaded.values());
 		for (Mine mine : loaded.values()) {
 			registerInternal(mine);
@@ -38,9 +49,12 @@ public final class MineManager {
 	}
 
 	public void close() {
+		templates.close();
 		storage.saveAll(minesByName.values());
 		storage.close();
 	}
+
+	public MineTemplateService templates() { return templates; }
 
 	public Collection<Mine> getAll() { return Collections.unmodifiableCollection(minesByName.values()); }
 
@@ -66,11 +80,15 @@ public final class MineManager {
 		unindex(mine);
 		storage.deleteMine(name);
 		TitanMC.getInstance().getMineScheduler().cancelReset(name);
+		templates.cancel(name);
 		return true;
 	}
 
 	public void setCuboid(String name, RegionUtils.Cuboid newCuboid) {
 		Mine mine = requireMine(name);
+		if (mine.getResetDefinition() instanceof MineResetDefinition.Template) {
+			throw new IllegalStateException("Switch this mine to palette reset before redefining its region");
+		}
 		Mine overlap = findOverlap(newCuboid, name);
 		if (overlap != null) throw new IllegalArgumentException("Mine overlaps: " + overlap.getName());
 		regions.redefine(mine, newCuboid);
@@ -145,6 +163,25 @@ public final class MineManager {
 	public Mine getFirstAt(Location location) {
 		RegionUtils.Cuboid cuboid = regionIndex.getFirstAt(location);
 		return cuboid == null ? null : cuboidToMine.get(cuboid);
+	}
+
+	public void setTemplateReset(String name, String templateId) {
+		Mine mine = requireMine(name);
+		String normalized = MineResetDefinition.normalizeTemplateId(templateId);
+		if (!templates.storage().exists(normalized)) throw new IllegalArgumentException("Unknown mine template: " + normalized);
+		TitanMC.getInstance().getMineScheduler().cancelReset(name);
+		mine.setResetDefinition(new MineResetDefinition.Template(normalized));
+		mine.setAutoResetBelowPercent(-1);
+		mine.resetDepletionCounters();
+		storage.saveMine(mine);
+	}
+
+	public void setPaletteReset(String name) {
+		Mine mine = requireMine(name);
+		TitanMC.getInstance().getMineScheduler().cancelReset(name);
+		mine.setResetDefinition(new MineResetDefinition.Palette());
+		mine.resetDepletionCounters();
+		storage.saveMine(mine);
 	}
 
 	public void completeReset(String name) {

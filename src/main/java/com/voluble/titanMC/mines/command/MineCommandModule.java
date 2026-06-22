@@ -89,6 +89,21 @@ public final class MineCommandModule implements CommandModule {
 					.argument("name", Args.word(), nameNode -> nameNode
 						.suggests(mineNames)
 						.executes(this::handleForceReset)))
+				.literal("template", templateNode -> templateNode
+					.literal("capture", captureNode -> captureNode
+						.argument("name", Args.word(), nameNode -> nameNode
+							.suggests(mineNames)
+							.argument("template", Args.word(), templateId -> templateId
+								.executes(this::handleTemplateCapture))))
+					.literal("use", useNode -> useNode
+						.argument("name", Args.word(), nameNode -> nameNode
+							.suggests(mineNames)
+							.argument("template", Args.word(), templateId -> templateId
+								.executes(this::handleTemplateUse))))
+					.literal("palette", paletteNode -> paletteNode
+						.argument("name", Args.word(), nameNode -> nameNode
+							.suggests(mineNames)
+							.executes(this::handlePaletteReset))))
 				.literal("delete", delNode -> delNode
 					.argument("name", Args.word(), nameNode -> nameNode
 						.suggests(mineNames)
@@ -272,6 +287,59 @@ public final class MineCommandModule implements CommandModule {
 			player.sendMessage("Deleted mine '" + name + "'. The blocks were left untouched.");
 		} else {
 			player.sendMessage("Unknown mine.");
+		}
+		return CommandTree.ok();
+	}
+
+	private int handleTemplateCapture(MichelleCommandContext ctx) throws CommandSyntaxException {
+		Player player = ctx.playerExecutor();
+		String name = ctx.arg("name", String.class);
+		String templateId = ctx.arg("template", String.class);
+		Mine mine = manager().get(name);
+		if (mine == null) {
+			player.sendMessage("Unknown mine.");
+			return CommandTree.ok();
+		}
+		plugin.getMineScheduler().cancelReset(name);
+		try {
+			if (!manager().templates().capture(mine, templateId, result -> {
+				if (result.successful()) {
+					try {
+						manager().setTemplateReset(name, templateId);
+						player.sendMessage(result.message() + " Template reset is now active.");
+					} catch (RuntimeException failure) {
+						player.sendMessage("The template was captured but could not be activated: " + failure.getMessage());
+					}
+				} else player.sendMessage(result.message());
+			})) {
+				player.sendMessage("That mine is already being captured.");
+				return CommandTree.ok();
+			}
+			player.sendMessage("Capturing template " + templateId + " from " + name + "...");
+		} catch (IllegalArgumentException failure) {
+			player.sendMessage(failure.getMessage());
+		}
+		return CommandTree.ok();
+	}
+
+	private int handleTemplateUse(MichelleCommandContext ctx) throws CommandSyntaxException {
+		Player player = ctx.playerExecutor();
+		try {
+			manager().setTemplateReset(ctx.arg("name", String.class), ctx.arg("template", String.class));
+			player.sendMessage("Template reset enabled.");
+		} catch (RuntimeException failure) {
+			player.sendMessage(failure.getMessage());
+		}
+		return CommandTree.ok();
+	}
+
+	private int handlePaletteReset(MichelleCommandContext ctx) throws CommandSyntaxException {
+		Player player = ctx.playerExecutor();
+		try {
+			manager().setPaletteReset(ctx.arg("name", String.class));
+			player.sendMessage("Palette reset enabled.");
+		} catch (RuntimeException failure) {
+			player.sendMessage(failure.getMessage());
 		}
 		return CommandTree.ok();
 	}

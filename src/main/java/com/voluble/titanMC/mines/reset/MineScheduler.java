@@ -17,6 +17,7 @@ public final class MineScheduler {
 	private final Plugin plugin;
 	private final MineManager manager;
 	private final MineResetQueue resetQueue = new MineResetQueue();
+	private final MineResetTaskFactory resetTasks;
 	private final Map<String, Long> resetTimes = new HashMap<>(); // Track when depletion resets are triggered
 	private BukkitTask resetTask;
 	private BukkitTask scheduleTask;
@@ -28,6 +29,7 @@ public final class MineScheduler {
 	public MineScheduler(Plugin plugin, MineManager manager) {
 		this.plugin = plugin;
 		this.manager = manager;
+		this.resetTasks = new MineResetTaskFactory(plugin, manager.templates().storage());
 	}
 
 	public void start() {
@@ -55,9 +57,9 @@ public final class MineScheduler {
 
 	public boolean forceReset(String name) {
 		Mine mine = manager.get(name);
-		if (mine == null) return false;
+		if (mine == null || manager.templates().isCapturing(name)) return false;
 		cancelReset(name);
-		resetQueue.replace(new MineResetRunner(plugin, mine));
+		resetQueue.replace(resetTasks.create(mine));
 		return true;
 	}
 
@@ -99,14 +101,14 @@ public final class MineScheduler {
 	private void tickSchedules() {
 		long now = System.currentTimeMillis();
 		for (Mine mine : manager.getAll()) {
-			if (!mine.isEnabled() || resetQueue.contains(mine.getName())) continue;
+			if (!mine.isEnabled() || resetQueue.contains(mine.getName()) || manager.templates().isCapturing(mine.getName())) continue;
 			long remainingMs = mine.getNextResetEpochMs() - now;
 			long remainingSeconds = Math.max(0L, (remainingMs + 999L) / 1000L);
 			if (remainingMs > 0L && remainingSeconds <= 10L) {
 				broadcastCountdown(mine, remainingSeconds);
 			}
 			if (remainingMs <= 0L) {
-				resetQueue.replace(new MineResetRunner(plugin, mine));
+				resetQueue.replace(resetTasks.create(mine));
 			}
 		}
 		tickDepletionCountdown(now);
@@ -133,8 +135,8 @@ public final class MineScheduler {
 				// Time's up! Trigger the actual reset
 				it.remove();
 				Mine mine = manager.get(mineName);
-				if (mine != null) {
-					resetQueue.replace(new MineResetRunner(plugin, mine));
+				if (mine != null && !manager.templates().isCapturing(mine.getName())) {
+					resetQueue.replace(resetTasks.create(mine));
 				}
 				continue;
 			}

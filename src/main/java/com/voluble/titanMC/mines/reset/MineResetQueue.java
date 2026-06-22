@@ -70,8 +70,10 @@ public final class MineResetQueue {
 			changed += work.changedBlocks();
 			if (work.finished()) {
 				active.remove(name);
-				completed.accept(name);
-				completedCount++;
+				if (task.successful()) {
+					completed.accept(name);
+					completedCount++;
+				}
 			} else {
 				order.addLast(name);
 			}
