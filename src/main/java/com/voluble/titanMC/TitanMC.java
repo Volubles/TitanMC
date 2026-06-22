@@ -9,7 +9,6 @@ import com.voluble.titanMC.auctions.config.AuctionConfigurationManager;
 import com.voluble.titanMC.cells.CellLeaseScheduler;
 import com.voluble.titanMC.cells.CellManager;
 import com.voluble.titanMC.cells.CellRentalService;
-import com.voluble.titanMC.cells.CellRentalEligibility;
 import com.voluble.titanMC.cells.CellResetService;
 import com.voluble.titanMC.cells.CellSignService;
 import com.voluble.titanMC.cells.CellTrackingListener;
@@ -69,6 +68,7 @@ import com.voluble.titanMC.ranks.service.PlayerRankService;
 import com.voluble.titanMC.ranks.service.RankCatalog;
 import com.voluble.titanMC.ranks.service.RankEconomy;
 import com.voluble.titanMC.ranks.service.RankupService;
+import com.voluble.titanMC.ranks.service.WardRankRequirements;
 import com.voluble.titanMC.ranks.service.VaultRankEconomy;
 import com.voluble.titanMC.util.ComponentFiles;
 import io.voluble.michellelib.commands.CommandKit;
@@ -170,7 +170,7 @@ public final class TitanMC extends JavaPlugin {
 			protectionService
 		);
 
-		CellRentalEligibility cellEligibility;
+		WardRankRequirements cellEligibility;
 		try {
 			cellManager = new CellManager(
 				new CellStorage(ComponentFiles.resolveData(getDataFolder().toPath(), "cells", "cells.db")),
@@ -178,7 +178,7 @@ public final class TitanMC extends JavaPlugin {
 				rankConfiguration.catalog()
 			);
 			cellManager.load();
-			cellEligibility = new CellRentalEligibility(
+			cellEligibility = new WardRankRequirements(
 				rankConfiguration.catalog(), cellsConfiguration.current().minimumRanksByWard()
 			);
 		} catch (Exception exception) {
@@ -210,7 +210,8 @@ public final class TitanMC extends JavaPlugin {
 				cellManager.storage(),
 				auctionConfiguration,
 				economyManager.getEconomy(),
-				rankConfiguration.catalog()
+				rankConfiguration.catalog(),
+				rankService
 			);
 			auctionService.start();
 			managedBlockAccess.register(new AuctionManagedBlockAccess(auctionService));

@@ -5,6 +5,7 @@ import com.voluble.titanMC.ranks.model.RankId;
 import com.voluble.titanMC.ranks.model.WardDefinition;
 import com.voluble.titanMC.ranks.model.WardId;
 import com.voluble.titanMC.ranks.service.RankCatalog;
+import com.voluble.titanMC.ranks.service.WardRankRequirements;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -25,7 +26,7 @@ class CellRentalEligibilityTest {
 
 	@Test
 	void minimumRankAndLaterRanksMayRentInUnlockedWard() {
-		CellRentalEligibility eligibility = eligibility();
+		WardRankRequirements eligibility = eligibility();
 
 		assertFalse(eligibility.allows(E4, E));
 		assertTrue(eligibility.allows(E3, E));
@@ -37,16 +38,16 @@ class CellRentalEligibilityTest {
 
 	@Test
 	void requirementMustBelongToItsWard() {
-		assertThrows(IllegalArgumentException.class, () -> new CellRentalEligibility(catalog(), Map.of(E, D3)));
+		assertThrows(IllegalArgumentException.class, () -> new WardRankRequirements(catalog(), Map.of(E, D3)));
 	}
 
 	@Test
 	void everyWardMustHaveARequirement() {
-		assertThrows(IllegalArgumentException.class, () -> new CellRentalEligibility(catalog(), Map.of(E, E3)));
+		assertThrows(IllegalArgumentException.class, () -> new WardRankRequirements(catalog(), Map.of(E, E3)));
 	}
 
-	private static CellRentalEligibility eligibility() {
-		return new CellRentalEligibility(catalog(), Map.of(E, E3, D, D3));
+	private static WardRankRequirements eligibility() {
+		return new WardRankRequirements(catalog(), Map.of(E, E3, D, D3));
 	}
 
 	private static RankCatalog catalog() {

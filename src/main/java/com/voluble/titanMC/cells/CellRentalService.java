@@ -3,6 +3,7 @@ package com.voluble.titanMC.cells;
 import com.voluble.titanMC.cells.model.CellDefinition;
 import com.voluble.titanMC.cells.model.CellLease;
 import com.voluble.titanMC.ranks.service.PlayerRankService;
+import com.voluble.titanMC.ranks.service.WardRankRequirements;
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -18,7 +19,7 @@ public final class CellRentalService {
 	private final Economy economy;
 	private final CellSignRenderer signs;
 	private final PlayerRankService playerRanks;
-	private final CellRentalEligibility eligibility;
+	private final WardRankRequirements eligibility;
 	private final Set<String> reservations = new HashSet<>();
 	private final Set<UUID> playerReservations = new HashSet<>();
 
@@ -28,7 +29,7 @@ public final class CellRentalService {
 		Economy economy,
 		CellSignRenderer signs,
 		PlayerRankService playerRanks,
-		CellRentalEligibility eligibility
+		WardRankRequirements eligibility
 	) {
 		this.plugin = plugin;
 		this.cells = cells;

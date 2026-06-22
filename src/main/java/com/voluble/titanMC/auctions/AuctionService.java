@@ -5,6 +5,8 @@ import com.voluble.titanMC.auctions.config.AuctionConfigurationManager;
 import com.voluble.titanMC.cells.persistence.CellStorage;
 import com.voluble.titanMC.ranks.model.WardId;
 import com.voluble.titanMC.ranks.service.RankCatalog;
+import com.voluble.titanMC.ranks.service.PlayerRankService;
+import com.voluble.titanMC.ranks.service.WardRankRequirements;
 import com.voluble.titanMC.util.ChatUtils;
 import net.kyori.adventure.text.Component;
 import net.milkbowl.vault.economy.Economy;
@@ -40,6 +42,8 @@ public final class AuctionService implements AuctionBlockAccess, AutoCloseable {
 	private final AuctionConfigurationManager configuration;
 	private final Economy economy;
 	private final RankCatalog ranks;
+	private final PlayerRankService playerRanks;
+	private final WardRankRequirements purchaseRequirements;
 	private final Map<String, AuctionPosition> positions = new LinkedHashMap<>();
 	private final Map<Long, AuctionLot> auctions = new LinkedHashMap<>();
 	private BukkitTask task;
@@ -50,7 +54,8 @@ public final class AuctionService implements AuctionBlockAccess, AutoCloseable {
 		CellStorage cellStorage,
 		AuctionConfigurationManager configuration,
 		Economy economy,
-		RankCatalog ranks
+		RankCatalog ranks,
+		PlayerRankService playerRanks
 	) {
 		this.plugin = plugin;
 		this.storage = storage;
@@ -58,6 +63,8 @@ public final class AuctionService implements AuctionBlockAccess, AutoCloseable {
 		this.configuration = configuration;
 		this.economy = economy;
 		this.ranks = ranks;
+		this.playerRanks = playerRanks;
+		this.purchaseRequirements = new WardRankRequirements(ranks, configuration.current().minimumRanksByWard());
 	}
 
 	public void start() throws SQLException {
@@ -183,6 +190,18 @@ public final class AuctionService implements AuctionBlockAccess, AutoCloseable {
 				plugin.getLogger().severe("Could not expire auction: " + exception.getMessage());
 			}
 			player.sendMessage("This auction has expired.");
+			return;
+		}
+		var currentRank = playerRanks.current(player.getUniqueId());
+		if (currentRank.isEmpty()) {
+			player.sendMessage("Your prison rank is not available yet.");
+			return;
+		}
+		if (!purchaseRequirements.allows(currentRank.get().rankId(), lot.wardId())) {
+			player.sendMessage(
+				"You need rank " + purchaseRequirements.requiredRank(lot.wardId()).value().toUpperCase(java.util.Locale.ROOT)
+					+ " to buy an auction in ward " + lot.wardId().value().toUpperCase(java.util.Locale.ROOT) + "."
+			);
 			return;
 		}
 		if (economy == null) {
