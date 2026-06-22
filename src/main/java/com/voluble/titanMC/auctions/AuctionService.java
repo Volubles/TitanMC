@@ -51,6 +51,8 @@ public final class AuctionService implements AuctionBlockAccess, AutoCloseable {
 	private final Map<String, AuctionPosition> positions = new LinkedHashMap<>();
 	private final Map<Long, AuctionLot> auctions = new LinkedHashMap<>();
 	private final Set<Long> purchasesInFlight = new HashSet<>();
+	private final Set<Long> maintenanceInFlight = new HashSet<>();
+	private final Set<String> assignmentPositionsInFlight = new HashSet<>();
 	private boolean ingestionRunning;
 	private BukkitTask task;
 
@@ -235,7 +237,9 @@ public final class AuctionService implements AuctionBlockAccess, AutoCloseable {
 	}
 
 	private void removeEmptyAuction(AuctionLot lot) {
+		if (!maintenanceInFlight.add(lot.id())) return;
 		storage.deleteAuctionAsync(lot.id()).whenComplete((ignored, failure) -> Bukkit.getScheduler().runTask(plugin, () -> {
+			maintenanceInFlight.remove(lot.id());
 			if (failure != null) {
 				plugin.getLogger().log(java.util.logging.Level.SEVERE, "Could not remove empty auction " + lot.id(), failure);
 				return;
@@ -337,14 +341,12 @@ public final class AuctionService implements AuctionBlockAccess, AutoCloseable {
 			long now = System.currentTimeMillis();
 			for (AuctionLot lot : List.copyOf(auctions.values())) {
 				if (lot.items().isEmpty()) {
-					delete(lot);
-				} else if (lot.state() == AuctionState.FOR_SALE && lot.saleExpiresAt() <= now) {
-					delete(lot);
+					removeEmptyAuction(lot);
+				} else if (lot.state() == AuctionState.FOR_SALE && lot.saleExpiresAt() <= now
+					&& !purchasesInFlight.contains(lot.id())) {
+					removeEmptyAuction(lot);
 				} else if (lot.state() == AuctionState.CLAIMED && lot.claimExpiresAt() <= now) {
-					AuctionLot publicLot = lot.publicAccess();
-					storage.saveAuction(publicLot);
-					auctions.put(publicLot.id(), publicLot);
-					updateSign(publicLot);
+					makePublic(lot);
 				} else if (lot.positionId() != null) {
 					updateSign(lot);
 				}
@@ -358,11 +360,16 @@ public final class AuctionService implements AuctionBlockAccess, AutoCloseable {
 	private void startIngestion() {
 		if (ingestionRunning) return;
 		ingestionRunning = true;
+		AuctionConfiguration priceConfiguration = configuration.current();
+		long minimumPrice = priceConfiguration.minimumPrice();
+		long maximumPrice = priceConfiguration.maximumPrice();
 		cellStorage.loadReadyRecoveryLots().thenCompose(sources -> {
 			if (sources.isEmpty()) return CompletableFuture.completedFuture(null);
 			CompletableFuture<Void> chain = CompletableFuture.completedFuture(null);
 			for (var source : sources) {
-				chain = chain.thenCompose(ignored -> storage.ingestAsync(source, this::randomPrice))
+				chain = chain.thenCompose(ignored -> storage.ingestAsync(
+					source, () -> randomPrice(minimumPrice, maximumPrice)
+				))
 					.thenCompose(ignored -> cellStorage.markRecoveryLotAuctioned(source.id()));
 			}
 			return chain.thenCompose(ignored -> storage.loadAuctionsAsync());
@@ -379,17 +386,50 @@ public final class AuctionService implements AuctionBlockAccess, AutoCloseable {
 		}));
 	}
 
-	private void assignQueued() throws SQLException {
+	private void assignQueued() {
+		int submitted = 0;
 		for (AuctionAssignmentPlanner.Assignment assignment : AuctionAssignmentPlanner.plan(
 			positions.values(), auctions.values(), ThreadLocalRandom.current()
 		)) {
+			if (submitted >= 4) return;
+			if (maintenanceInFlight.contains(assignment.auctionId())
+				|| !assignmentPositionsInFlight.add(assignment.positionId())) {
+				continue;
+			}
 			AuctionLot lot = auctions.get(assignment.auctionId());
 			AuctionPosition position = positions.get(assignment.positionId());
 			AuctionLot assigned = lot.atPosition(position.id(), System.currentTimeMillis() + configuration.current().saleDurationMillis());
-			storage.saveAuction(assigned);
-			auctions.put(assigned.id(), assigned);
-			render(assigned);
+			maintenanceInFlight.add(lot.id());
+			submitted++;
+			storage.saveAuctionAsync(assigned).whenComplete((ignored, failure) -> Bukkit.getScheduler().runTask(plugin, () -> {
+				maintenanceInFlight.remove(lot.id());
+				assignmentPositionsInFlight.remove(position.id());
+				if (failure != null) {
+					plugin.getLogger().log(java.util.logging.Level.SEVERE, "Could not assign auction " + lot.id(), failure);
+					return;
+				}
+				AuctionLot current = auctions.get(lot.id());
+				if (current == null || current.state() != AuctionState.QUEUED) return;
+				auctions.put(assigned.id(), assigned);
+				render(assigned);
+			}));
 		}
+	}
+
+	private void makePublic(AuctionLot lot) {
+		if (!maintenanceInFlight.add(lot.id())) return;
+		AuctionLot publicLot = lot.publicAccess();
+		storage.saveAuctionAsync(publicLot).whenComplete((ignored, failure) -> Bukkit.getScheduler().runTask(plugin, () -> {
+			maintenanceInFlight.remove(lot.id());
+			if (failure != null) {
+				plugin.getLogger().log(java.util.logging.Level.SEVERE, "Could not release auction " + lot.id(), failure);
+				return;
+			}
+			AuctionLot current = auctions.get(lot.id());
+			if (current == null || current.state() != AuctionState.CLAIMED) return;
+			auctions.put(publicLot.id(), publicLot);
+			updateSign(publicLot);
+		}));
 	}
 
 	private void validateStoredAssignments() {
@@ -479,10 +519,9 @@ public final class AuctionService implements AuctionBlockAccess, AutoCloseable {
 		chest.setType(Material.AIR, false);
 	}
 
-	private long randomPrice() {
-		AuctionConfiguration config = configuration.current();
-		if (config.minimumPrice() == config.maximumPrice()) return config.minimumPrice();
-		return ThreadLocalRandom.current().nextLong(config.minimumPrice(), config.maximumPrice() + 1);
+	private static long randomPrice(long minimum, long maximum) {
+		if (minimum == maximum) return minimum;
+		return ThreadLocalRandom.current().nextLong(minimum, maximum + 1);
 	}
 
 	private static Map<Long, AuctionLot> index(List<AuctionLot> lots) {
