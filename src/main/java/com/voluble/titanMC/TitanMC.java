@@ -64,6 +64,7 @@ import com.voluble.titanMC.regions.protection.service.ProtectionService;
 import com.voluble.titanMC.regions.protection.service.RegionEntryService;
 import com.voluble.titanMC.regions.service.RegionEngine;
 import com.voluble.titanMC.progression.bukkit.BlockBreakCredSource;
+import com.voluble.titanMC.progression.bukkit.LevelUpNotifier;
 import com.voluble.titanMC.progression.command.CredCommandModule;
 import com.voluble.titanMC.progression.config.ProgressionConfigurationManager;
 import com.voluble.titanMC.progression.config.ProgressionSourceConfig;
@@ -289,6 +290,9 @@ public final class TitanMC extends JavaPlugin {
 			getServer().getPluginManager().disablePlugin(this);
 			return false;
 		}
+		getServer().getPluginManager().registerEvents(
+			new LevelUpNotifier(getServer(), () -> progressionConfiguration.current().notifications()), this
+		);
 		credSources = new CredSourceRegistry();
 		for (var entry : progressionConfiguration.current().sources().entrySet()) {
 			CredSource id = entry.getKey();
