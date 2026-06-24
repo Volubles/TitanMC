@@ -27,6 +27,10 @@ commands:
     description: Manage thrift auction positions
     usage: /auction position <add|remove|list|teleport>
     permission: titanmc.auction.admin
+  cred:
+    description: Show or manage cred and player levels
+    usage: /cred [info <player>|give <player> <amount> [source]|take <player> <amount>]
+    permission: titanmc.cred.use
 permissions:
   donatortools.give:
     description: Allows giving donator tools
@@ -61,6 +65,12 @@ permissions:
     default: true
   titanmc.rank.admin:
     description: Allows managing player prison ranks
+    default: op
+  titanmc.cred.use:
+    description: Allows viewing own cred and level
+    default: true
+  titanmc.cred.admin:
+    description: Allows viewing and adjusting other players' cred
     default: op
   titanmc.protection.bypass:
     description: Bypasses Titan region protection
