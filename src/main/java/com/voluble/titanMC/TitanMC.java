@@ -25,6 +25,7 @@ import com.voluble.titanMC.managers.ConfigManager;
 import com.voluble.titanMC.donatortools.DonatorToolsService;
 import com.voluble.titanMC.donatortools.command.DonatorToolsCommandModule;
 import com.voluble.titanMC.donatortools.config.DonatorToolsConfigurationManager;
+import com.voluble.titanMC.display.message.DisplayBroadcastService;
 import com.voluble.titanMC.managers.EconomyManager;
 import com.voluble.titanMC.mines.MineManager;
 import com.voluble.titanMC.mines.protection.MineProtectionPolicy;
@@ -105,6 +106,7 @@ public final class TitanMC extends JavaPlugin {
 	private AuctionService auctionService;
 	private ManagedBlockAccessRegistry managedBlockAccess;
 	private CellBaselineCaptureService cellBaselineCapture;
+	private DisplayBroadcastService displayBroadcastService;
 
 	@Override
 	public void onEnable() {
@@ -121,6 +123,7 @@ public final class TitanMC extends JavaPlugin {
 
 		// Initialize menu service
 		menuService = MenuService.create(this);
+		displayBroadcastService = DisplayBroadcastService.create(getServer());
 
 		// Initialize general config
 		configManager = new ConfigManager(this);
@@ -414,4 +417,5 @@ public final class TitanMC extends JavaPlugin {
 	public ProtectionService getProtectionService() { return protectionService; }
 	public CellManager getCellManager() { return cellManager; }
 	public RankCatalog getRanks() { return rankConfiguration.catalog(); }
+	public DisplayBroadcastService getDisplayBroadcastService() { return displayBroadcastService; }
 }
