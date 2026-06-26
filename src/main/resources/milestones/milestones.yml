@@ -1,0 +1,52 @@
+menus:
+  overview:
+    rows: 5
+    title: "<gradient:#30bbf1:#275ced><bold>Milestones</bold></gradient>"
+  category:
+    rows: 6
+    title: "<gradient:#30bbf1:#275ced><bold>{category}</bold></gradient>"
+
+categories:
+  mining:
+    name: "Mining"
+    icon: DIAMOND_PICKAXE
+    enabled: true
+  ranks:
+    name: "Ranks"
+    icon: NETHER_STAR
+    enabled: false
+  progression:
+    name: "Progression"
+    icon: EXPERIENCE_BOTTLE
+    enabled: false
+  cells:
+    name: "Cells"
+    icon: OAK_DOOR
+    enabled: false
+  auctions:
+    name: "Auctions"
+    icon: CHEST
+    enabled: false
+
+tracks:
+  mine_blocks:
+    category: mining
+    name: "Mine Blocks"
+    icon: STONE_PICKAXE
+    metric: MINE_BLOCKS_BROKEN
+    tiers:
+      - id: mine_blocks_1
+        name: "First Swing"
+        target: 1
+      - id: mine_blocks_100
+        name: "Getting Started"
+        target: 100
+      - id: mine_blocks_1000
+        name: "Miner"
+        target: 1000
+      - id: mine_blocks_10000
+        name: "Dedicated Miner"
+        target: 10000
+      - id: mine_blocks_100000
+        name: "Relentless Miner"
+        target: 100000
