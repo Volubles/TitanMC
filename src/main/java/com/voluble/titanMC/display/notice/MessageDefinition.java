@@ -6,8 +6,7 @@ public record MessageDefinition(MessageKey key, MessageType type, String default
 	public MessageDefinition {
 		Objects.requireNonNull(key, "key");
 		Objects.requireNonNull(type, "type");
-		defaultText = Objects.requireNonNull(defaultText, "defaultText").trim();
-		if (defaultText.isEmpty()) throw new IllegalArgumentException("defaultText must not be blank");
+		Objects.requireNonNull(defaultText, "defaultText");
 	}
 
 	public static MessageDefinition of(String key, MessageType type, String defaultText) {

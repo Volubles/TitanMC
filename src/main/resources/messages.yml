@@ -3,38 +3,23 @@
 # These messages are for ordinary command and service responses. Broadcasts,
 # boss bars, menus, signs, and custom flows can keep their own layouts.
 
-templates:
-  info: "<glyph:prefix_defaultchat><color:#30bbf1>{{message}}</color>"
-  success: "<glyph:prefix_successchat><color:#42d829>{{message}}</color>"
-  error: "<glyph:prefix_errorchat><color:#d43030>{{message}}</color>"
-
-glyphs:
-  prefix_defaultchat: ""
-  prefix_successchat: ""
-  prefix_errorchat: ""
-
 messages:
-  info:
-    donator-tools:
-      help:
-        title: "Donator Tools"
-        give: '/dtools \<tool> [player]'
-        reload: "/dtools reload"
-        tool: "{{tool}} - {{description}}"
-      inventory-full: "Your inventory was full, so the {{tool}} was dropped."
-  success:
-    donator-tools:
-      reload:
-        success: "Donator tools reloaded."
-      received: "You received a {{tool}}."
-      gave: "Gave {{tool}} to {{player}}."
-  error:
-    command:
-      player-only: "Only players can use this command."
-    donator-tools:
-      reload:
-        denied: "You may not reload donator tools."
-        failed: "Donator tools reload failed: {{reason}}"
-      give:
-        denied: "You may not give donator tools."
-      unknown: "Unknown tool. Available: {{tools}}"
+  command:
+    player-only: "Only players can use this command."
+  donator-tools:
+    help:
+      title: "Donator Tools"
+      usage: |-
+        /dtools <tool> [player]
+        /dtools reload
+      tool: "{{tool}} - {{description}}"
+    reload:
+      denied: "You may not reload donator tools."
+      success: "Donator tools reloaded."
+      failed: "Donator tools reload failed: {{reason}}"
+    give:
+      denied: "You may not give donator tools."
+    unknown: "Unknown tool. Available: {{tools}}"
+    inventory-full: "Your inventory was full, so the {{tool}} was dropped."
+    received: "You received a {{tool}}."
+    gave: "Gave {{tool}} to {{player}}."

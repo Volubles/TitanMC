@@ -49,8 +49,7 @@ public final class DonatorToolsCommandModule implements CommandModule {
 
 	private int sendHelp(MichelleCommandContext context) {
 		messages.send(context.sender(), MessageDefaults.DONATOR_TOOLS_HELP_TITLE);
-		messages.send(context.sender(), MessageDefaults.DONATOR_TOOLS_HELP_GIVE);
-		messages.send(context.sender(), MessageDefaults.DONATOR_TOOLS_HELP_RELOAD);
+		messages.send(context.sender(), MessageDefaults.DONATOR_TOOLS_HELP_USAGE);
 		for (DonatorToolType type : DonatorToolType.values()) {
 			messages.send(context.sender(), MessageDefaults.DONATOR_TOOLS_HELP_TOOL, args -> args
 				.plain("tool", type.id())

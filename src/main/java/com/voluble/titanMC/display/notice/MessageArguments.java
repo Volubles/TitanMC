@@ -1,12 +1,10 @@
 package com.voluble.titanMC.display.notice;
 
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
-import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
-
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 public final class MessageArguments {
 	private final Map<String, Component> values = new LinkedHashMap<>();
@@ -21,17 +19,8 @@ public final class MessageArguments {
 		return this;
 	}
 
-	TagResolver resolver(MessageCatalog catalog) {
-		Objects.requireNonNull(catalog, "catalog");
-		TagResolver.Builder builder = TagResolver.builder();
-		for (var entry : values.entrySet()) {
-			builder.resolver(Placeholder.component(entry.getKey(), entry.getValue()));
-		}
-		builder.tag("glyph", (argumentQueue, context) -> {
-			String name = argumentQueue.popOr("glyph name expected").value();
-			return net.kyori.adventure.text.minimessage.tag.Tag.inserting(Component.text(catalog.glyph(name)));
-		});
-		return builder.build();
+	Optional<Component> find(String key) {
+		return Optional.ofNullable(values.get(key));
 	}
 
 	private static String normalizeKey(String key) {

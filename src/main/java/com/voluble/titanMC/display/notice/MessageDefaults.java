@@ -9,11 +9,8 @@ public final class MessageDefaults {
 	public static final MessageDefinition DONATOR_TOOLS_HELP_TITLE = MessageDefinition.of(
 		"donator-tools.help.title", MessageType.INFO, "Donator Tools"
 	);
-	public static final MessageDefinition DONATOR_TOOLS_HELP_GIVE = MessageDefinition.of(
-		"donator-tools.help.give", MessageType.INFO, "/dtools \\<tool> [player]"
-	);
-	public static final MessageDefinition DONATOR_TOOLS_HELP_RELOAD = MessageDefinition.of(
-		"donator-tools.help.reload", MessageType.INFO, "/dtools reload"
+	public static final MessageDefinition DONATOR_TOOLS_HELP_USAGE = MessageDefinition.of(
+		"donator-tools.help.usage", MessageType.INFO, "/dtools <tool> [player]\n/dtools reload"
 	);
 	public static final MessageDefinition DONATOR_TOOLS_HELP_TOOL = MessageDefinition.of(
 		"donator-tools.help.tool", MessageType.INFO, "{{tool}} - {{description}}"
@@ -47,8 +44,7 @@ public final class MessageDefaults {
 	private static final List<MessageDefinition> ALL = List.of(
 		COMMAND_PLAYER_ONLY,
 		DONATOR_TOOLS_HELP_TITLE,
-		DONATOR_TOOLS_HELP_GIVE,
-		DONATOR_TOOLS_HELP_RELOAD,
+		DONATOR_TOOLS_HELP_USAGE,
 		DONATOR_TOOLS_HELP_TOOL,
 		DONATOR_TOOLS_RELOAD_DENIED,
 		DONATOR_TOOLS_RELOADED,

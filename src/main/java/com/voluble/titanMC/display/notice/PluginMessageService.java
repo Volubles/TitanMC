@@ -3,6 +3,7 @@ package com.voluble.titanMC.display.notice;
 import net.kyori.adventure.text.Component;
 import org.bukkit.command.CommandSender;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 
@@ -24,10 +25,12 @@ public final class PluginMessageService {
 		Objects.requireNonNull(definition, "definition");
 		MessageArguments arguments = new MessageArguments();
 		Objects.requireNonNull(customize, "customize").accept(arguments);
-		sender.sendMessage(renderer.render(configuration.current(), definition, arguments));
+		for (Component line : renderer.render(configuration.current(), definition, arguments)) {
+			sender.sendMessage(line);
+		}
 	}
 
-	public Component render(MessageDefinition definition, Consumer<MessageArguments> customize) {
+	public List<Component> render(MessageDefinition definition, Consumer<MessageArguments> customize) {
 		MessageArguments arguments = new MessageArguments();
 		Objects.requireNonNull(customize, "customize").accept(arguments);
 		return renderer.render(configuration.current(), definition, arguments);

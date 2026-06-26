@@ -1,7 +1,7 @@
 package com.voluble.titanMC.display.notice;
 
+import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
-import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.Test;
 
@@ -13,33 +13,32 @@ class MessageRendererTest {
 	private static final PlainTextComponentSerializer PLAIN = PlainTextComponentSerializer.plainText();
 
 	@Test
-	void rendersMessageThroughConfiguredTemplate() {
+	void rendersPlainMessageWithArguments() {
 		YamlConfiguration yaml = new YamlConfiguration();
-		yaml.set("templates.success", "<green>[OK] {{message}}</green>");
-		yaml.set("messages.success.cells.created", "Created {{cell}}.");
+		yaml.set("messages.cells.created", "Created {{cell}}.");
 		MessageCatalog catalog = MessageCatalog.load(yaml);
-		MessageRenderer renderer = new MessageRenderer(MiniMessage.miniMessage());
+		MessageRenderer renderer = new MessageRenderer();
 
 		String plain = PLAIN.serialize(renderer.render(
 			catalog,
 			MessageDefinition.of("cells.created", MessageType.SUCCESS, "Created cell."),
 			new MessageArguments().plain("cell", "A1")
-		));
+		).getFirst());
 
-		assertEquals("[OK] Created A1.", plain);
+		assertEquals("Created A1.", plain);
 	}
 
 	@Test
-	void fallsBackToDefinitionAndDefaultTemplateWhenKeyIsMissing() {
+	void fallsBackToDefinitionWhenKeyIsMissing() {
 		YamlConfiguration yaml = new YamlConfiguration();
 		MessageCatalog catalog = MessageCatalog.load(yaml);
-		MessageRenderer renderer = new MessageRenderer(MiniMessage.miniMessage());
+		MessageRenderer renderer = new MessageRenderer();
 
 		String plain = PLAIN.serialize(renderer.render(
 			catalog,
 			MessageDefinition.of("cells.unknown", MessageType.ERROR, "Unknown cell."),
 			new MessageArguments()
-		));
+		).getFirst());
 
 		assertEquals("Unknown cell.", plain);
 	}
@@ -56,14 +55,33 @@ class MessageRendererTest {
 	}
 
 	@Test
-	void escapedMiniMessageUsageTextRendersLiteralAngleBrackets() {
+	void usageTextRendersLiteralAngleBrackets() {
 		YamlConfiguration yaml = new YamlConfiguration();
-		MessageYamlSynchronizer.sync(yaml, List.of(MessageDefaults.DONATOR_TOOLS_HELP_GIVE));
+		MessageYamlSynchronizer.sync(yaml, List.of(MessageDefaults.DONATOR_TOOLS_HELP_USAGE));
 		MessageCatalog catalog = MessageCatalog.load(yaml);
-		MessageRenderer renderer = new MessageRenderer(MiniMessage.miniMessage());
+		MessageRenderer renderer = new MessageRenderer();
 
-		String plain = PLAIN.serialize(renderer.render(catalog, MessageDefaults.DONATOR_TOOLS_HELP_GIVE));
+		String plain = PLAIN.serialize(renderer.render(catalog, MessageDefaults.DONATOR_TOOLS_HELP_USAGE).getFirst());
 
 		assertEquals("/dtools <tool> [player]", plain);
+	}
+
+	@Test
+	void multilineMessagesRenderOneComponentPerLineIncludingEmptyLines() {
+		YamlConfiguration yaml = new YamlConfiguration();
+		yaml.set("messages.help", "Line one\n\nLine three");
+		MessageCatalog catalog = MessageCatalog.load(yaml);
+		MessageRenderer renderer = new MessageRenderer();
+
+		List<Component> lines = renderer.render(
+			catalog,
+			MessageDefinition.of("help", MessageType.INFO, "fallback"),
+			new MessageArguments()
+		);
+
+		assertEquals(3, lines.size());
+		assertEquals("Line one", PLAIN.serialize(lines.get(0)));
+		assertEquals("", PLAIN.serialize(lines.get(1)));
+		assertEquals("Line three", PLAIN.serialize(lines.get(2)));
 	}
 }
