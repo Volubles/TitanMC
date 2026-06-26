@@ -65,6 +65,7 @@ import com.voluble.titanMC.regions.protection.service.RegionEntryService;
 import com.voluble.titanMC.regions.service.RegionEngine;
 import com.voluble.titanMC.progression.bukkit.MineBlockCredSource;
 import com.voluble.titanMC.progression.bukkit.LevelUpNotifier;
+import com.voluble.titanMC.progression.bukkit.ProgressionBarService;
 import com.voluble.titanMC.progression.command.CredCommandModule;
 import com.voluble.titanMC.progression.config.ProgressionConfigurationManager;
 import com.voluble.titanMC.progression.config.ProgressionSourceConfig;
@@ -116,6 +117,7 @@ public final class TitanMC extends JavaPlugin {
 	private CellBaselineCaptureService cellBaselineCapture;
 	private ProgressionConfigurationManager progressionConfiguration;
 	private ProgressionEngine progressionEngine;
+	private ProgressionBarService progressionBars;
 	private CredSourceRegistry credSources;
 
 	@Override
@@ -271,7 +273,7 @@ public final class TitanMC extends JavaPlugin {
 			))
 			.addModule(new AuctionCommandModule(auctionService, rankConfiguration.catalog()))
 			.addModule(new RankCommandModule(rankConfiguration.catalog(), rankService, rankupService))
-			.addModule(new CredCommandModule(progressionEngine))
+			.addModule(new CredCommandModule(progressionEngine, progressionBars))
 			.install();
 
 		getLogger().info("TitanMC has been enabled!");
@@ -294,6 +296,9 @@ public final class TitanMC extends JavaPlugin {
 		getServer().getPluginManager().registerEvents(
 			new LevelUpNotifier(getServer(), () -> progressionConfiguration.current().notifications()), this
 		);
+		progressionBars = new ProgressionBarService(this, progressionEngine);
+		progressionBars.start();
+		getServer().getPluginManager().registerEvents(progressionBars, this);
 		credSources = new CredSourceRegistry();
 		for (var entry : progressionConfiguration.current().sources().entrySet()) {
 			CredSource id = entry.getKey();
@@ -441,6 +446,7 @@ public final class TitanMC extends JavaPlugin {
 			try { rankStorage.close(); }
 			catch (Exception exception) { getLogger().severe("Failed to close Ranks cleanly: " + exception.getMessage()); }
 		}
+		if (progressionBars != null) progressionBars.close();
 		if (progressionEngine != null) {
 			try { progressionEngine.close(); }
 			catch (Exception exception) { getLogger().severe("Failed to close Progression cleanly: " + exception.getMessage()); }

@@ -4,6 +4,7 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.voluble.titanMC.progression.model.CredAmount;
 import com.voluble.titanMC.progression.model.CredSource;
 import com.voluble.titanMC.progression.model.PlayerProgression;
+import com.voluble.titanMC.progression.bukkit.ProgressionBarService;
 import com.voluble.titanMC.progression.service.ProgressionEngine;
 import com.voluble.titanMC.progression.service.ProgressionUpdate;
 import io.voluble.michellelib.commands.CommandModule;
@@ -25,9 +26,11 @@ public final class CredCommandModule implements CommandModule {
 	private static final CredSource ADMIN_SOURCE = CredSource.of("admin");
 
 	private final ProgressionEngine engine;
+	private final ProgressionBarService bars;
 
-	public CredCommandModule(ProgressionEngine engine) {
+	public CredCommandModule(ProgressionEngine engine, ProgressionBarService bars) {
 		this.engine = Objects.requireNonNull(engine, "engine");
+		this.bars = Objects.requireNonNull(bars, "bars");
 	}
 
 	@Override
@@ -54,8 +57,8 @@ public final class CredCommandModule implements CommandModule {
 	}
 
 	private int showOwn(Player player) {
-		PlayerProgression progression = engine.current(player.getUniqueId());
-		player.sendMessage(formatSelf(progression));
+		bars.show(player);
+		player.sendMessage("Showing cred progress for 30 seconds.");
 		return CommandTree.ok();
 	}
 
@@ -107,21 +110,6 @@ public final class CredCommandModule implements CommandModule {
 			: "";
 		sender.sendMessage(verb + " " + name + " " + credChange + levelChange + " [" + source.value() + "]");
 		return CommandTree.ok();
-	}
-
-	private String formatSelf(PlayerProgression progression) {
-		long current = progression.totalCred();
-		int level = progression.level();
-		long currentLevelStart = engine.curve().credForLevel(level);
-		long nextLevelStart = level >= engine.maxLevel() ? current : engine.curve().credForLevel(level + 1);
-		if (level >= engine.maxLevel()) {
-			return "Cred: " + current + " | level " + level + " (max)";
-		}
-		long inLevel = current - currentLevelStart;
-		long span = nextLevelStart - currentLevelStart;
-		long percent = span == 0 ? 100 : (100L * inLevel) / span;
-		return "Cred: " + current + " | level " + level
-			+ " | " + inLevel + " / " + span + " to level " + (level + 1) + " (" + percent + "%)";
 	}
 
 	private String formatLine(PlayerProgression progression) {
