@@ -1,9 +1,12 @@
 menus:
   overview:
-    rows: 5
+    rows: 4
     title: "<gradient:#30bbf1:#275ced><bold>Milestones</bold></gradient>"
   category:
-    rows: 6
+    rows: 4
+    title: "<gradient:#30bbf1:#275ced><bold>{category}</bold></gradient>"
+  track:
+    rows: 4
     title: "<gradient:#30bbf1:#275ced><bold>{category}</bold></gradient>"
 
 notifications:

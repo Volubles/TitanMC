@@ -20,6 +20,7 @@ import java.util.Optional;
 public record MilestoneConfiguration(
 	MilestoneMenuConfig overviewMenu,
 	MilestoneMenuConfig categoryMenu,
+	MilestoneMenuConfig trackMenu,
 	MilestoneNotificationConfig notifications,
 	MilestoneCatalog catalog,
 	FileConfiguration yaml
@@ -27,6 +28,7 @@ public record MilestoneConfiguration(
 	public MilestoneConfiguration {
 		Objects.requireNonNull(overviewMenu, "overviewMenu");
 		Objects.requireNonNull(categoryMenu, "categoryMenu");
+		Objects.requireNonNull(trackMenu, "trackMenu");
 		Objects.requireNonNull(notifications, "notifications");
 		Objects.requireNonNull(catalog, "catalog");
 		Objects.requireNonNull(yaml, "yaml");
@@ -34,12 +36,13 @@ public record MilestoneConfiguration(
 
 	public static MilestoneConfiguration load(FileConfiguration yaml) {
 		Objects.requireNonNull(yaml, "yaml");
-		MilestoneMenuConfig overviewMenu = menu(yaml, "overview", 5, "<gold><bold>Milestones</bold>");
-		MilestoneMenuConfig categoryMenu = menu(yaml, "category", 6, "<gold><bold>{category}</bold>");
+		MilestoneMenuConfig overviewMenu = menu(yaml, "overview", 4, "<gold><bold>Milestones</bold>");
+		MilestoneMenuConfig categoryMenu = menu(yaml, "category", 4, "<gold><bold>{category}</bold>");
+		MilestoneMenuConfig trackMenu = menu(yaml, "track", 4, "<gold><bold>{category}</bold>");
 		MilestoneNotificationConfig notifications = notifications(yaml);
 		Map<String, MilestoneCategory> categories = categories(requireSection(yaml, "categories"));
 		Map<String, MilestoneTrack> tracks = tracks(requireSection(yaml, "tracks"), categories);
-		return new MilestoneConfiguration(overviewMenu, categoryMenu, notifications, new MilestoneCatalog(categories, tracks), yaml);
+		return new MilestoneConfiguration(overviewMenu, categoryMenu, trackMenu, notifications, new MilestoneCatalog(categories, tracks), yaml);
 	}
 
 	private static MilestoneMenuConfig menu(FileConfiguration yaml, String key, int rows, String title) {

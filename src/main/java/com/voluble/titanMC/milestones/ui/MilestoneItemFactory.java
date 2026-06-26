@@ -11,13 +11,19 @@ import org.bukkit.inventory.ItemStack;
 import java.util.Objects;
 
 final class MilestoneItemFactory {
+	private final OverviewMilestoneItemFactory overview;
 	private final CategoryMilestoneItemFactory categories;
 	private final TrackMilestoneItemFactory tracks;
 
 	MilestoneItemFactory(MilestoneService milestones) {
 		Objects.requireNonNull(milestones, "milestones");
+		overview = new OverviewMilestoneItemFactory(milestones);
 		categories = new CategoryMilestoneItemFactory(milestones);
 		tracks = new TrackMilestoneItemFactory(milestones);
+	}
+
+	ItemStack overview(Player player, MilestoneCatalog catalog) {
+		return overview.create(player, catalog);
 	}
 
 	ItemStack category(Player player, MilestoneCategory category, MilestoneCatalog catalog) {

@@ -4,11 +4,12 @@ import com.voluble.titanMC.milestones.config.MilestoneConfigurationManager;
 import com.voluble.titanMC.milestones.model.MilestoneCategory;
 import com.voluble.titanMC.milestones.model.MilestoneTrack;
 import io.voluble.michellelib.menu.MenuService;
-import io.voluble.michellelib.menu.item.Items;
+import io.voluble.michellelib.menu.item.Items.DisplayItem;
 import io.voluble.michellelib.menu.template.MenuDefinition;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.entity.Player;
 
+import java.util.List;
 import java.util.Objects;
 
 final class TrackMilestoneMenu {
@@ -34,28 +35,32 @@ final class TrackMilestoneMenu {
 		int pages = MilestoneMenuChrome.pages(track.tiers().size(), MilestoneMenuLayout.TIER_SLOTS.size());
 		int page = MilestoneMenuChrome.clampPage(requestedPage, pages);
 		int start = page * MilestoneMenuLayout.TIER_SLOTS.size();
-		MenuDefinition.chest(config.categoryMenu().rows())
-			.title(MiniMessage.miniMessage().deserialize(config.categoryMenu().title().replace("{category}", track.name())))
+		int visibleTiers = Math.min(MilestoneMenuLayout.TIER_SLOTS.size(), Math.max(0, track.tiers().size() - start));
+		List<Integer> slots = MilestoneMenuLayout.centeredSlots(MilestoneMenuLayout.TIER_SLOTS, visibleTiers);
+		MenuDefinition.chest(config.trackMenu().rows())
+			.title(MiniMessage.miniMessage().deserialize(config.trackMenu().title().replace("{category}", track.name())))
 			.onOpen(context -> {
-				for (int slot : MilestoneMenuLayout.FRAME_SLOTS) {
-					context.setItem(slot, new Items.DisplayItem(MilestoneMenuChrome.filler()));
+				for (int slot : MilestoneMenuLayout.footerSlots(config.trackMenu().rows())) {
+					context.setItem(slot, new DisplayItem(MilestoneMenuChrome.filler()));
 				}
-				context.setItem(4, new Items.DisplayItem(items.trackDetails(player, track)));
-				for (int index = 0; index < MilestoneMenuLayout.TIER_SLOTS.size(); index++) {
+				context.setItem(MilestoneMenuLayout.SUMMARY, new DisplayItem(items.trackDetails(player, track)));
+				for (int index = 0; index < slots.size(); index++) {
 					int tierIndex = start + index;
-					if (tierIndex >= track.tiers().size()) break;
 					context.setItem(
-						MilestoneMenuLayout.TIER_SLOTS.get(index),
-						new Items.DisplayItem(items.tier(player, track, track.tiers().get(tierIndex)))
+						slots.get(index),
+						new DisplayItem(items.tier(player, track, track.tiers().get(tierIndex)))
 					);
 				}
-				if (page > 0) context.setItem(MilestoneMenuLayout.PREVIOUS, MilestoneMenuChrome.pageButton(
-					org.bukkit.Material.ARROW, "<yellow>Previous Page", () -> navigator.openTrack(player, category, track, page - 1)
+				if (page > 0) context.setItem(MilestoneMenuLayout.previousSlot(config.trackMenu().rows()), MilestoneMenuChrome.previousPageButton(
+					page - 1, pages, () -> navigator.openTrack(player, category, track, page - 1)
 				));
-				if (page + 1 < pages) context.setItem(MilestoneMenuLayout.NEXT, MilestoneMenuChrome.pageButton(
-					org.bukkit.Material.ARROW, "<yellow>Next Page", () -> navigator.openTrack(player, category, track, page + 1)
+				if (page + 1 < pages) context.setItem(MilestoneMenuLayout.nextSlot(config.trackMenu().rows()), MilestoneMenuChrome.nextPageButton(
+					page + 1, pages, () -> navigator.openTrack(player, category, track, page + 1)
 				));
-				context.setItem(MilestoneMenuLayout.BACK_TRACK, new Items.BackItem(() -> navigator.openCategory(player, category.id())));
+				context.setItem(
+					MilestoneMenuLayout.centerFooterSlot(config.trackMenu().rows()),
+					MilestoneMenuChrome.backButton(category.name(), () -> navigator.openCategory(player, category.id()))
+				);
 			})
 			.build()
 			.open(menus, player);

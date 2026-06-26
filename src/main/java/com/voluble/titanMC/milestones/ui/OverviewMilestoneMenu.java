@@ -4,7 +4,6 @@ import com.voluble.titanMC.milestones.config.MilestoneCatalog;
 import com.voluble.titanMC.milestones.config.MilestoneConfigurationManager;
 import com.voluble.titanMC.milestones.model.MilestoneCategory;
 import io.voluble.michellelib.menu.MenuService;
-import io.voluble.michellelib.menu.item.Items;
 import io.voluble.michellelib.menu.item.MenuItem;
 import io.voluble.michellelib.menu.item.Items.DisplayItem;
 import io.voluble.michellelib.menu.template.MenuDefinition;
@@ -39,15 +38,16 @@ final class OverviewMilestoneMenu {
 		MenuDefinition.chest(config.overviewMenu().rows())
 			.title(MiniMessage.miniMessage().deserialize(config.overviewMenu().title()))
 			.onOpen(context -> {
-				for (int slot : MilestoneMenuLayout.FRAME_SLOTS) {
+				for (int slot : MilestoneMenuLayout.footerSlots(config.overviewMenu().rows())) {
 					context.setItem(slot, new DisplayItem(MilestoneMenuChrome.filler()));
 				}
+				context.setItem(MilestoneMenuLayout.SUMMARY, new DisplayItem(items.overview(player, catalog)));
 				List<MilestoneCategory> categories = catalog.categories();
 				for (int index = 0; index < categories.size() && index < MilestoneMenuLayout.CATEGORY_SLOTS.size(); index++) {
 					MilestoneCategory category = categories.get(index);
 					context.setItem(MilestoneMenuLayout.CATEGORY_SLOTS.get(index), categoryItem(player, category, catalog));
 				}
-				context.setItem(MilestoneMenuLayout.CLOSE_OVERVIEW, new Items.CloseItem());
+				context.setItem(MilestoneMenuLayout.centerFooterSlot(config.overviewMenu().rows()), MilestoneMenuChrome.closeButton());
 			})
 			.build()
 			.open(menus, player);
