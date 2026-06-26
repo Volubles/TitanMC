@@ -14,16 +14,6 @@ final class MilestoneMenuChrome {
 	private MilestoneMenuChrome() {
 	}
 
-	static ItemStack filler() {
-		ItemStack item = new ItemStack(Material.BLACK_STAINED_GLASS_PANE);
-		ItemMeta meta = item.getItemMeta();
-		if (meta != null) {
-			meta.displayName(ChatUtils.formatItem(" "));
-			item.setItemMeta(meta);
-		}
-		return item;
-	}
-
 	static MenuItem previousPageButton(int targetPage, int pages, Runnable action) {
 		return button(
 			Material.ARROW,

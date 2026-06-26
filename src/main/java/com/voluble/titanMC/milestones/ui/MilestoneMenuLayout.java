@@ -18,15 +18,6 @@ public final class MilestoneMenuLayout {
 	private MilestoneMenuLayout() {
 	}
 
-	public static List<Integer> footerSlots(int rows) {
-		int start = footerStart(rows);
-		List<Integer> slots = new ArrayList<>(9);
-		for (int offset = 0; offset < 9; offset++) {
-			slots.add(start + offset);
-		}
-		return slots;
-	}
-
 	public static int previousSlot(int rows) {
 		return footerStart(rows);
 	}
@@ -37,6 +28,10 @@ public final class MilestoneMenuLayout {
 
 	public static int nextSlot(int rows) {
 		return footerStart(rows) + 8;
+	}
+
+	public static List<Integer> leadingSlots(List<Integer> slots, int itemCount) {
+		return slots.subList(0, Math.min(Math.max(0, itemCount), slots.size()));
 	}
 
 	public static List<Integer> centeredSlots(List<Integer> slots, int itemCount) {

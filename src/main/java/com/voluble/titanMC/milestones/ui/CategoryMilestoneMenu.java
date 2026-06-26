@@ -47,13 +47,10 @@ final class CategoryMilestoneMenu {
 		int page = MilestoneMenuChrome.clampPage(requestedPage, pages);
 		int start = page * MilestoneMenuLayout.TRACK_SLOTS.size();
 		int visibleTracks = Math.min(MilestoneMenuLayout.TRACK_SLOTS.size(), Math.max(0, tracks.size() - start));
-		List<Integer> slots = MilestoneMenuLayout.centeredSlots(MilestoneMenuLayout.TRACK_SLOTS, visibleTracks);
+		List<Integer> slots = MilestoneMenuLayout.leadingSlots(MilestoneMenuLayout.TRACK_SLOTS, visibleTracks);
 		MenuDefinition.chest(config.categoryMenu().rows())
 			.title(title(config.categoryMenu().title(), category))
 			.onOpen(context -> {
-				for (int slot : MilestoneMenuLayout.footerSlots(config.categoryMenu().rows())) {
-					context.setItem(slot, new DisplayItem(MilestoneMenuChrome.filler()));
-				}
 				context.setItem(MilestoneMenuLayout.SUMMARY, new DisplayItem(items.category(player, category, catalog)));
 				for (int index = 0; index < slots.size(); index++) {
 					int trackIndex = start + index;

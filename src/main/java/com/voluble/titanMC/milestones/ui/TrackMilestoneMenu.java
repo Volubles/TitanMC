@@ -40,9 +40,6 @@ final class TrackMilestoneMenu {
 		MenuDefinition.chest(config.trackMenu().rows())
 			.title(MiniMessage.miniMessage().deserialize(config.trackMenu().title().replace("{category}", track.name())))
 			.onOpen(context -> {
-				for (int slot : MilestoneMenuLayout.footerSlots(config.trackMenu().rows())) {
-					context.setItem(slot, new DisplayItem(MilestoneMenuChrome.filler()));
-				}
 				context.setItem(MilestoneMenuLayout.SUMMARY, new DisplayItem(items.trackDetails(player, track)));
 				for (int index = 0; index < slots.size(); index++) {
 					int tierIndex = start + index;

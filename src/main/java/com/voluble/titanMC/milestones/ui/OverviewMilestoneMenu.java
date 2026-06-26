@@ -38,9 +38,6 @@ final class OverviewMilestoneMenu {
 		MenuDefinition.chest(config.overviewMenu().rows())
 			.title(MiniMessage.miniMessage().deserialize(config.overviewMenu().title()))
 			.onOpen(context -> {
-				for (int slot : MilestoneMenuLayout.footerSlots(config.overviewMenu().rows())) {
-					context.setItem(slot, new DisplayItem(MilestoneMenuChrome.filler()));
-				}
 				context.setItem(MilestoneMenuLayout.SUMMARY, new DisplayItem(items.overview(player, catalog)));
 				List<MilestoneCategory> categories = catalog.categories();
 				for (int index = 0; index < categories.size() && index < MilestoneMenuLayout.CATEGORY_SLOTS.size(); index++) {
