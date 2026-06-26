@@ -29,6 +29,7 @@ import com.voluble.titanMC.display.message.DisplayBroadcastService;
 import com.voluble.titanMC.display.notice.MessageConfigurationManager;
 import com.voluble.titanMC.display.notice.MessageDefaults;
 import com.voluble.titanMC.display.notice.PluginMessageService;
+import com.voluble.titanMC.integrations.placeholderapi.TitanPlaceholderExpansion;
 import com.voluble.titanMC.managers.EconomyManager;
 import com.voluble.titanMC.mines.MineManager;
 import com.voluble.titanMC.mines.protection.MineProtectionPolicy;
@@ -78,7 +79,6 @@ import com.voluble.titanMC.progression.service.CredSourceRegistry;
 import com.voluble.titanMC.progression.service.MineBlockCredPolicy;
 import com.voluble.titanMC.progression.service.ProgressionEngine;
 import com.voluble.titanMC.ranks.bukkit.PlayerRankListener;
-import com.voluble.titanMC.ranks.bukkit.RankPlaceholderExpansion;
 import com.voluble.titanMC.ranks.bukkit.RankNotificationService;
 import com.voluble.titanMC.ranks.command.RankCommandModule;
 import com.voluble.titanMC.ranks.config.RankConfigurationManager;
@@ -117,6 +117,7 @@ public final class TitanMC extends JavaPlugin {
 	private RankConfigurationManager rankConfiguration;
 	private PlayerRankStorage rankStorage;
 	private PlayerRankService rankService;
+	private RankEconomy rankEconomy = RankEconomy.unavailable();
 	private RankupService rankupService;
 	private AuctionService auctionService;
 	private ManagedBlockAccessRegistry managedBlockAccess;
@@ -178,6 +179,7 @@ public final class TitanMC extends JavaPlugin {
 		if (!economyManager.initialize()) getLogger().warning("No Vault economy provider found; cell renting is disabled");
 		if (!initializeRanks()) return;
 		if (!initializeProgression()) return;
+		registerTitanPlaceholders();
 		managedBlockAccess = new ManagedBlockAccessRegistry(getLogger());
 		if (!initializeProtection()) return;
 
@@ -349,7 +351,7 @@ public final class TitanMC extends JavaPlugin {
 			getServer().getPluginManager().disablePlugin(this);
 			return false;
 		}
-		RankEconomy rankEconomy = economyManager.isEnabled()
+		rankEconomy = economyManager.isEnabled()
 			? new VaultRankEconomy(economyManager.getEconomy(), getServer())
 			: RankEconomy.unavailable();
 		rankService = new PlayerRankService(
@@ -371,15 +373,16 @@ public final class TitanMC extends JavaPlugin {
 			new RankNotificationService(getServer(), displayBroadcastService, rankConfiguration::current),
 			this
 		);
-		registerRankPlaceholders(rankEconomy);
 		getLogger().info("Player ranks ready (" + (rankEconomy.available() ? "Vault economy" : "no economy") + ")");
 		return true;
 	}
 
-	private void registerRankPlaceholders(RankEconomy rankEconomy) {
+	private void registerTitanPlaceholders() {
 		if (!getServer().getPluginManager().isPluginEnabled("PlaceholderAPI")) return;
-		new RankPlaceholderExpansion(this, rankConfiguration::catalog, rankService, rankEconomy).register();
-		getLogger().info("PlaceholderAPI rank placeholders registered");
+		new TitanPlaceholderExpansion(
+			this, rankConfiguration::catalog, rankService, rankEconomy, progressionEngine
+		).register();
+		getLogger().info("PlaceholderAPI TitanMC placeholders registered");
 	}
 
 	private boolean initializeProtection() {
