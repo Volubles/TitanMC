@@ -120,6 +120,8 @@ tracks:
     name: "Tool Mastery"
     icon: DIAMOND_PICKAXE
     metric: DONATOR_TOOL_USED
+    linear: false
+    slot: 22
     tiers:
       - id: tool_mastery_smelting_once
         name: "Use Smelting Pickaxe"

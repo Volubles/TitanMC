@@ -14,6 +14,8 @@ public record MilestoneTrack(
 	Material icon,
 	MilestoneMetric metric,
 	String subject,
+	boolean linear,
+	int menuSlot,
 	List<MilestoneTier> tiers
 ) {
 	public MilestoneTrack {
@@ -24,6 +26,7 @@ public record MilestoneTrack(
 		if (!icon.isItem()) throw new IllegalArgumentException("track icon must be an item");
 		Objects.requireNonNull(metric, "metric");
 		subject = subject == null ? "" : subject.trim().toLowerCase(java.util.Locale.ROOT);
+		if (menuSlot < -1) throw new IllegalArgumentException("track menu slot must be -1 or greater");
 		tiers = List.copyOf(Objects.requireNonNull(tiers, "tiers"));
 		if (tiers.isEmpty()) throw new IllegalArgumentException("track must contain at least one tier");
 		Map<MilestoneObjectiveKey, Long> previousTargets = new LinkedHashMap<>();

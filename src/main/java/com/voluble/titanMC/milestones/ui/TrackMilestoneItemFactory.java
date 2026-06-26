@@ -35,7 +35,7 @@ final class TrackMilestoneItemFactory {
 		lore.add(ChatUtils.formatItem("<gray>Completed: <white>" + completedTiers(player, track) + " / " + track.tiers().size()));
 		lore.add(Component.empty());
 		nextTier(player, track).ifPresentOrElse(
-			tier -> lore.add(ChatUtils.formatItem("<gray>Next: <#f7d774>" + tier.name() + " <gray>("
+			tier -> lore.add(ChatUtils.formatItem("<gray>" + cardProgressLabel(track) + ": <#f7d774>" + tier.name() + " <gray>("
 				+ numbers.format(Math.min(progress(player, tier).amount(), tier.target())) + " / " + numbers.format(tier.target()) + ")")),
 			() -> lore.add(ChatUtils.formatItem("<green>All tiers completed"))
 		);
@@ -49,13 +49,13 @@ final class TrackMilestoneItemFactory {
 	ItemStack createTier(Player player, MilestoneTrack track, MilestoneTier tier) {
 		MilestoneProgress progress = progress(player, tier);
 		boolean completed = milestones.completed(player.getUniqueId(), tier.id()) || progress.amount() >= tier.target();
-		boolean current = !completed && nextTier(player, track).map(MilestoneTier::id).orElse("").equals(tier.id());
+		boolean current = !completed && (!track.linear() || nextTier(player, track).map(MilestoneTier::id).orElse("").equals(tier.id()));
 		Material material = completed ? Material.LIME_DYE : current ? Material.YELLOW_DYE : Material.GRAY_DYE;
 		ItemStack item = new ItemStack(material);
 		ItemMeta meta = item.getItemMeta();
 		if (meta == null) return item;
 		String color = completed ? "<green>" : current ? "<#f7d774>" : "<gray>";
-		String status = completed ? "DONE" : current ? "NEXT" : "LOCKED";
+		String status = completed ? "DONE" : current ? currentStatus(track) : "LOCKED";
 		meta.displayName(ChatUtils.formatItem(color + "<bold>" + tier.name()));
 		meta.lore(List.of(
 			ChatUtils.formatItem("<gray>Status: " + color + status),
@@ -79,9 +79,9 @@ final class TrackMilestoneItemFactory {
 		for (MilestoneTier tier : track.tiers()) {
 			MilestoneProgress progress = progress(player, tier);
 			boolean completed = milestones.completed(player.getUniqueId(), tier.id()) || progress.amount() >= tier.target();
-			boolean current = !completed && !foundCurrent;
+			boolean current = !completed && (!track.linear() || !foundCurrent);
 			if (current) foundCurrent = true;
-			String prefix = completed ? "DONE" : current ? "NEXT" : "LOCKED";
+			String prefix = completed ? "DONE" : current ? currentStatus(track) : "LOCKED";
 			String color = completed ? "<green>" : current ? "<#f7d774>" : "<gray>";
 			String value = completed
 				? numbers.format(tier.target()) + " / " + numbers.format(tier.target())
@@ -106,6 +106,14 @@ final class TrackMilestoneItemFactory {
 		return track.tiers().stream()
 			.filter(tier -> !milestones.completed(player.getUniqueId(), tier.id()) && progress(player, tier).amount() < tier.target())
 			.findFirst();
+	}
+
+	private String currentStatus(MilestoneTrack track) {
+		return track.linear() ? "NEXT" : "ACTIVE";
+	}
+
+	private String cardProgressLabel(MilestoneTrack track) {
+		return track.linear() ? "Next" : "Active";
 	}
 
 	private MilestoneProgress progress(Player player, MilestoneTier tier) {

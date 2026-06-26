@@ -85,6 +85,8 @@ public record MilestoneConfiguration(
 				material(entry, "icon"),
 				metric,
 				subject,
+				entry.getBoolean("linear", true),
+				entry.getInt("slot", -1),
 				tiers(entry, id, metric, subject)
 			);
 			tracks.put(track.id(), track);

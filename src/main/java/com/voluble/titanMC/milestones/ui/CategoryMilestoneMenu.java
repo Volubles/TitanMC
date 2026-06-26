@@ -13,8 +13,11 @@ import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 final class CategoryMilestoneMenu {
 	private final MenuService menus;
@@ -47,14 +50,13 @@ final class CategoryMilestoneMenu {
 		int page = MilestoneMenuChrome.clampPage(requestedPage, pages);
 		int start = page * MilestoneMenuLayout.TRACK_SLOTS.size();
 		int visibleTracks = Math.min(MilestoneMenuLayout.TRACK_SLOTS.size(), Math.max(0, tracks.size() - start));
-		List<Integer> slots = MilestoneMenuLayout.leadingSlots(MilestoneMenuLayout.TRACK_SLOTS, visibleTracks);
+		List<TrackPlacement> placements = placements(tracks.subList(start, start + visibleTracks));
 		MenuDefinition.chest(config.categoryMenu().rows())
 			.title(title(config.categoryMenu().title(), category))
 			.onOpen(context -> {
 				context.setItem(MilestoneMenuLayout.SUMMARY, new DisplayItem(items.category(player, category, catalog)));
-				for (int index = 0; index < slots.size(); index++) {
-					int trackIndex = start + index;
-					context.setItem(slots.get(index), trackItem(player, category, tracks.get(trackIndex)));
+				for (TrackPlacement placement : placements) {
+					context.setItem(placement.slot(), trackItem(player, category, placement.track()));
 				}
 				if (page > 0) context.setItem(MilestoneMenuLayout.previousSlot(config.categoryMenu().rows()), MilestoneMenuChrome.previousPageButton(
 					page - 1, pages, () -> navigator.openCategory(player, category.id(), page - 1)
@@ -69,6 +71,26 @@ final class CategoryMilestoneMenu {
 			})
 			.build()
 			.open(menus, player);
+	}
+
+	private List<TrackPlacement> placements(List<MilestoneTrack> tracks) {
+		List<TrackPlacement> placements = new ArrayList<>(tracks.size());
+		Set<Integer> occupied = new HashSet<>();
+		for (MilestoneTrack track : tracks) {
+			if (track.menuSlot() >= 0 && MilestoneMenuLayout.TRACK_SLOTS.contains(track.menuSlot()) && occupied.add(track.menuSlot())) {
+				placements.add(new TrackPlacement(track.menuSlot(), track));
+			}
+		}
+		for (MilestoneTrack track : tracks) {
+			if (placements.stream().anyMatch(placement -> placement.track().equals(track))) continue;
+			for (int slot : MilestoneMenuLayout.TRACK_SLOTS) {
+				if (occupied.add(slot)) {
+					placements.add(new TrackPlacement(slot, track));
+					break;
+				}
+			}
+		}
+		return placements;
 	}
 
 	private MenuItem trackItem(Player player, MilestoneCategory category, MilestoneTrack track) {
@@ -89,5 +111,8 @@ final class CategoryMilestoneMenu {
 
 	private Component title(String template, MilestoneCategory category) {
 		return MiniMessage.miniMessage().deserialize(template.replace("{category}", category.name()));
+	}
+
+	private record TrackPlacement(int slot, MilestoneTrack track) {
 	}
 }
