@@ -69,8 +69,9 @@ class ProgressionBarServiceTest {
 		bars.show(player);
 
 		BossBar bar = onlyBossBar(player);
-		assertEquals("Cred Level 1 -> 2 | 0% | 100 cred left", title(bar));
+		assertEquals("Cred Level 1 | 0%", title(bar));
 		assertEquals(0.0F, bar.progress());
+		assertEquals(BossBar.Color.BLUE, bar.color());
 	}
 
 	@Test
@@ -82,7 +83,7 @@ class ProgressionBarServiceTest {
 		engine.give(player.getUniqueId(), CredAmount.of(150L), MINING);
 
 		BossBar bar = onlyBossBar(player);
-		assertEquals("Cred Level 2 -> 3 | 50% | 50 cred left", title(bar));
+		assertEquals("Cred Level 2 | 50%", title(bar));
 		assertEquals(0.5F, bar.progress());
 	}
 

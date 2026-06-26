@@ -5,6 +5,7 @@ import com.voluble.titanMC.progression.model.PlayerProgression;
 import com.voluble.titanMC.progression.service.ProgressionEngine;
 import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Server;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -100,7 +101,8 @@ public final class ProgressionBarService implements Listener, AutoCloseable {
 	private void update(Player player, ActiveBar activeBar, PlayerProgression progression, long now, boolean force) {
 		if (!force && now - activeBar.lastUpdatedAt < UPDATE_THROTTLE_MILLIS) return;
 		ProgressionBarView view = ProgressionBarView.from(progression, engine.curve(), engine.maxLevel());
-		activeBar.bar.name(Component.text(view.title()));
+		activeBar.bar.name(Component.text(view.title(), NamedTextColor.AQUA));
+		activeBar.bar.color(view.color());
 		activeBar.bar.progress((float) view.progress());
 		activeBar.lastUpdatedAt = now;
 	}

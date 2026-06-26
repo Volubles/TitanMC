@@ -12,11 +12,16 @@ import io.voluble.michellelib.commands.CommandRegistration;
 import io.voluble.michellelib.commands.arguments.Args;
 import io.voluble.michellelib.commands.context.MichelleCommandContext;
 import io.voluble.michellelib.commands.tree.CommandTree;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
+import java.text.NumberFormat;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -57,8 +62,11 @@ public final class CredCommandModule implements CommandModule {
 	}
 
 	private int showOwn(Player player) {
+		PlayerProgression progression = engine.current(player.getUniqueId());
+		for (Component line : formatSelf(progression)) {
+			player.sendMessage(line);
+		}
 		bars.show(player);
-		player.sendMessage("Showing cred progress for 30 seconds.");
 		return CommandTree.ok();
 	}
 
@@ -114,6 +122,38 @@ public final class CredCommandModule implements CommandModule {
 
 	private String formatLine(PlayerProgression progression) {
 		return progression.totalCred() + " cred, level " + progression.level();
+	}
+
+	private java.util.List<Component> formatSelf(PlayerProgression progression) {
+		NumberFormat numbers = NumberFormat.getIntegerInstance(Locale.US);
+		int level = progression.level();
+		long total = progression.totalCred();
+		Component header = Component.text("Cred Level " + level, NamedTextColor.GOLD)
+			.decoration(TextDecoration.BOLD, true);
+		Component totalLine = label("Total: ").append(Component.text(numbers.format(total) + " cred", NamedTextColor.WHITE));
+		if (level >= engine.maxLevel()) {
+			return java.util.List.of(
+				header,
+				totalLine,
+				Component.text("You have reached the current max level.", NamedTextColor.GREEN)
+			);
+		}
+		long currentLevelStart = engine.curve().credForLevel(level);
+		long nextLevelStart = engine.curve().credForLevel(level + 1);
+		long span = Math.max(1L, nextLevelStart - currentLevelStart);
+		long inLevel = Math.max(0L, total - currentLevelStart);
+		long remaining = Math.max(0L, nextLevelStart - total);
+		long percent = Math.round((100.0D * inLevel) / span);
+		return java.util.List.of(
+			header,
+			totalLine,
+			label("Progress: ").append(Component.text(percent + "% to level " + (level + 1), NamedTextColor.WHITE)),
+			label("Remaining: ").append(Component.text(numbers.format(remaining) + " cred", NamedTextColor.WHITE))
+		);
+	}
+
+	private static Component label(String text) {
+		return Component.text(text, NamedTextColor.GRAY);
 	}
 
 	private static OfflinePlayer resolvePlayer(String input) {
