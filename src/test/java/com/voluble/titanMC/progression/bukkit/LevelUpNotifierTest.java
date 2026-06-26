@@ -97,6 +97,22 @@ class LevelUpNotifierTest {
 	}
 
 	@Test
+	void milestoneLevelSendsOnlyBroadcastToLevelingPlayer() {
+		Player player = server.addPlayer();
+		PlayerProgression progression = new PlayerProgression(player.getUniqueId(), 900L, 10, 1L);
+
+		server.getPluginManager().callEvent(
+			new PlayerLeveledUpEvent(player.getUniqueId(), 9, 10, progression)
+		);
+
+		var playerMock = (org.mockbukkit.mockbukkit.entity.PlayerMock) player;
+		Component first = playerMock.nextComponentMessage();
+		assertNotNull(first);
+		assertEquals(player.getName() + " hit 10", PlainTextComponentSerializer.plainText().serialize(first));
+		assertNull(playerMock.nextComponentMessage());
+	}
+
+	@Test
 	void broadcastCanRenderMultipleLines() {
 		Player player = server.addPlayer();
 		Player observer = server.addPlayer("observer");

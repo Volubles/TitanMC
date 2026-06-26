@@ -38,11 +38,14 @@ public final class LevelUpNotifier implements Listener {
 		NotificationConfig config = notifications.get();
 		int level = event.currentLevel();
 		String name = player.getName();
+		boolean broadcast = config.shouldBroadcast(level);
 
-		broadcasts.send(player, message(config.playerMessages(), name, level));
+		if (!broadcast) {
+			broadcasts.send(player, message(config.playerMessages(), name, level));
+		}
 		config.soundForLevel(level).ifPresent(sound -> playSound(player, sound));
 
-		if (config.shouldBroadcast(level)) {
+		if (broadcast) {
 			broadcasts.broadcast(message(config.broadcastMessages(), name, level));
 			config.broadcastSound().ifPresent(sound -> {
 				for (Player online : server.getOnlinePlayers()) {
