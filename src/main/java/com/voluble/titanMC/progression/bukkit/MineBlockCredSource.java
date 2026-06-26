@@ -1,50 +1,49 @@
 package com.voluble.titanMC.progression.bukkit;
 
+import com.voluble.titanMC.mines.event.MineBlockMinedEvent;
 import com.voluble.titanMC.progression.model.CredAmount;
 import com.voluble.titanMC.progression.model.CredSource;
 import com.voluble.titanMC.progression.service.CredSourceRegistry;
+import com.voluble.titanMC.progression.service.MineBlockCredPolicy;
 import com.voluble.titanMC.progression.service.ProgressionEngine;
 import org.bukkit.GameMode;
-import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.BlockBreakEvent;
 
-import java.util.Map;
 import java.util.Objects;
 
-public final class BlockBreakCredSource implements Listener {
+public final class MineBlockCredSource implements Listener {
 
 	private final ProgressionEngine engine;
 	private final CredSourceRegistry registry;
 	private final CredSource sourceId;
-	private final Map<Material, CredAmount> values;
+	private final MineBlockCredPolicy policy;
 
-	public BlockBreakCredSource(
+	public MineBlockCredSource(
 		ProgressionEngine engine,
 		CredSourceRegistry registry,
 		CredSource sourceId,
-		Map<Material, CredAmount> values
+		MineBlockCredPolicy policy
 	) {
 		this.engine = Objects.requireNonNull(engine, "engine");
 		this.registry = Objects.requireNonNull(registry, "registry");
 		this.sourceId = Objects.requireNonNull(sourceId, "sourceId");
-		this.values = Map.copyOf(Objects.requireNonNull(values, "values"));
+		this.policy = Objects.requireNonNull(policy, "policy");
 	}
 
 	public CredSource sourceId() {
 		return sourceId;
 	}
 
-	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-	public void onBlockBreak(BlockBreakEvent event) {
+	@EventHandler(priority = EventPriority.MONITOR)
+	public void onMineBlockMined(MineBlockMinedEvent event) {
 		if (!registry.isEnabled(sourceId)) return;
-		Player player = event.getPlayer();
+		Player player = event.player();
 		if (player.getGameMode() == GameMode.CREATIVE || player.getGameMode() == GameMode.SPECTATOR) return;
-		CredAmount value = values.get(event.getBlock().getType());
-		if (value == null || value.isZero()) return;
+		CredAmount value = policy.rewardFor(event.material()).orElse(null);
+		if (value == null) return;
 		engine.give(player.getUniqueId(), value, sourceId);
 	}
 }

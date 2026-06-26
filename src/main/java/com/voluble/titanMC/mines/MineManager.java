@@ -12,7 +12,7 @@ import org.bukkit.plugin.Plugin;
 
 import java.util.*;
 
-public final class MineManager {
+public final class MineManager implements MineLookup {
 
 	private final Plugin plugin;
 	private final MineStorage storage;

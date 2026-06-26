@@ -63,13 +63,14 @@ import com.voluble.titanMC.regions.protection.policy.RegionPolicyRegistry;
 import com.voluble.titanMC.regions.protection.service.ProtectionService;
 import com.voluble.titanMC.regions.protection.service.RegionEntryService;
 import com.voluble.titanMC.regions.service.RegionEngine;
-import com.voluble.titanMC.progression.bukkit.BlockBreakCredSource;
+import com.voluble.titanMC.progression.bukkit.MineBlockCredSource;
 import com.voluble.titanMC.progression.bukkit.LevelUpNotifier;
 import com.voluble.titanMC.progression.command.CredCommandModule;
 import com.voluble.titanMC.progression.config.ProgressionConfigurationManager;
 import com.voluble.titanMC.progression.config.ProgressionSourceConfig;
 import com.voluble.titanMC.progression.model.CredSource;
 import com.voluble.titanMC.progression.service.CredSourceRegistry;
+import com.voluble.titanMC.progression.service.MineBlockCredPolicy;
 import com.voluble.titanMC.progression.service.ProgressionEngine;
 import com.voluble.titanMC.ranks.bukkit.PlayerRankListener;
 import com.voluble.titanMC.ranks.command.RankCommandModule;
@@ -180,7 +181,7 @@ public final class TitanMC extends JavaPlugin {
 		mineScheduler.start();
 		MineBlockAccess mineBlockAccess = new MineBlockAccess(mineManager);
 		getServer().getPluginManager().registerEvents(new MineBlockAccessListener(mineBlockAccess), this);
-		getServer().getPluginManager().registerEvents(new MineBlockListener(this), this);
+		getServer().getPluginManager().registerEvents(new MineBlockListener(this, mineManager, mineScheduler), this);
 		getLogger().info("MineBlockListener registered");
 		donatorTools = new DonatorToolsService(
 			this,
@@ -300,7 +301,9 @@ public final class TitanMC extends JavaPlugin {
 			credSources.register(id, source.displayName(), source.enabled());
 			if (!source.blockValues().isEmpty()) {
 				getServer().getPluginManager().registerEvents(
-					new BlockBreakCredSource(progressionEngine, credSources, id, source.blockValues()), this
+					new MineBlockCredSource(
+						progressionEngine, credSources, id, new MineBlockCredPolicy(source.blockValues())
+					), this
 				);
 			}
 		}

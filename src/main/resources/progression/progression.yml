@@ -2,8 +2,8 @@
 #
 # A player's total cred determines their main level. Any subsystem can
 # award cred by calling ProgressionEngine.give(...); the sources block
-# below registers the built-in event-driven sources (mining/woodcutting)
-# and lists per-block cred values. Add or remove materials freely.
+# below registers the built-in mine-event sources (mining/woodcutting)
+# and lists per-mine-block cred values. Add or remove materials freely.
 
 level-curve:
   type: polynomial
