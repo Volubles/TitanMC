@@ -16,6 +16,7 @@ public final class Mine {
 	private WeightedPalette palette;
 	private MineResetDefinition resetDefinition = new MineResetDefinition.Palette();
 	private MineBreakProfile breakProfile = new MineBreakProfile.Unrestricted();
+	private double credMultiplier = 1.0D;
 	private long nextResetEpochMs;
 	// Safe spawn location to teleport players to during reset. Null means no teleport
 	private Location safeSpawn;
@@ -58,6 +59,11 @@ public final class Mine {
 	public MineBreakProfile getBreakProfile() { return breakProfile; }
 	public void setBreakProfile(MineBreakProfile profile) {
 		this.breakProfile = Objects.requireNonNull(profile, "profile");
+	}
+	public double getCredMultiplier() { return credMultiplier; }
+	public void setCredMultiplier(double multiplier) {
+		if (!Double.isFinite(multiplier)) throw new IllegalArgumentException("cred multiplier must be finite");
+		this.credMultiplier = Math.max(0.0D, Math.min(10.0D, Math.round(multiplier * 100.0D) / 100.0D));
 	}
 	public long getNextResetEpochMs() { return nextResetEpochMs; }
 	public void setNextResetEpochMs(long epochMs) { this.nextResetEpochMs = epochMs; }

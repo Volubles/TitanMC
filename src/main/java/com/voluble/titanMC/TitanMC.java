@@ -63,6 +63,16 @@ import com.voluble.titanMC.regions.protection.policy.RegionPolicyRegistry;
 import com.voluble.titanMC.regions.protection.service.ProtectionService;
 import com.voluble.titanMC.regions.protection.service.RegionEntryService;
 import com.voluble.titanMC.regions.service.RegionEngine;
+import com.voluble.titanMC.progression.bukkit.MineBlockCredSource;
+import com.voluble.titanMC.progression.bukkit.LevelUpNotifier;
+import com.voluble.titanMC.progression.bukkit.ProgressionBarService;
+import com.voluble.titanMC.progression.command.CredCommandModule;
+import com.voluble.titanMC.progression.config.ProgressionConfigurationManager;
+import com.voluble.titanMC.progression.config.ProgressionSourceConfig;
+import com.voluble.titanMC.progression.model.CredSource;
+import com.voluble.titanMC.progression.service.CredSourceRegistry;
+import com.voluble.titanMC.progression.service.MineBlockCredPolicy;
+import com.voluble.titanMC.progression.service.ProgressionEngine;
 import com.voluble.titanMC.ranks.bukkit.PlayerRankListener;
 import com.voluble.titanMC.ranks.command.RankCommandModule;
 import com.voluble.titanMC.ranks.config.RankConfigurationManager;
@@ -105,6 +115,10 @@ public final class TitanMC extends JavaPlugin {
 	private AuctionService auctionService;
 	private ManagedBlockAccessRegistry managedBlockAccess;
 	private CellBaselineCaptureService cellBaselineCapture;
+	private ProgressionConfigurationManager progressionConfiguration;
+	private ProgressionEngine progressionEngine;
+	private ProgressionBarService progressionBars;
+	private CredSourceRegistry credSources;
 
 	@Override
 	public void onEnable() {
@@ -131,8 +145,10 @@ public final class TitanMC extends JavaPlugin {
 		cellsConfiguration = new CellsConfigurationManager(this);
 		auctionConfiguration = new AuctionConfigurationManager(this);
 		rankConfiguration = new RankConfigurationManager(this);
+		progressionConfiguration = new ProgressionConfigurationManager(this);
 		try {
 			configManager.registerComponent(rankConfiguration);
+			configManager.registerComponent(progressionConfiguration);
 			configManager.registerComponent(donatorToolsConfiguration);
 			configManager.registerComponent(cellsConfiguration);
 			configManager.registerComponent(auctionConfiguration);
@@ -148,6 +164,7 @@ public final class TitanMC extends JavaPlugin {
 		economyManager = new EconomyManager(this);
 		if (!economyManager.initialize()) getLogger().warning("No Vault economy provider found; cell renting is disabled");
 		if (!initializeRanks()) return;
+		if (!initializeProgression()) return;
 		managedBlockAccess = new ManagedBlockAccessRegistry(getLogger());
 		if (!initializeProtection()) return;
 
@@ -166,7 +183,7 @@ public final class TitanMC extends JavaPlugin {
 		mineScheduler.start();
 		MineBlockAccess mineBlockAccess = new MineBlockAccess(mineManager);
 		getServer().getPluginManager().registerEvents(new MineBlockAccessListener(mineBlockAccess), this);
-		getServer().getPluginManager().registerEvents(new MineBlockListener(this), this);
+		getServer().getPluginManager().registerEvents(new MineBlockListener(this, mineManager, mineScheduler), this);
 		getLogger().info("MineBlockListener registered");
 		donatorTools = new DonatorToolsService(
 			this,
@@ -256,9 +273,50 @@ public final class TitanMC extends JavaPlugin {
 			))
 			.addModule(new AuctionCommandModule(auctionService, rankConfiguration.catalog()))
 			.addModule(new RankCommandModule(rankConfiguration.catalog(), rankService, rankupService))
+			.addModule(new CredCommandModule(progressionEngine, progressionBars))
 			.install();
 
 		getLogger().info("TitanMC has been enabled!");
+	}
+
+	private boolean initializeProgression() {
+		try {
+			progressionEngine = ProgressionEngine.open(
+				ComponentFiles.resolveData(getDataFolder().toPath(), "progression", "progression.db"),
+				progressionConfiguration.current().curve(),
+				progressionConfiguration.current().maxLevel(),
+				event -> getServer().getPluginManager().callEvent(event),
+				getLogger()
+			);
+		} catch (java.sql.SQLException exception) {
+			getLogger().severe("Failed to open progression storage: " + exception.getMessage());
+			getServer().getPluginManager().disablePlugin(this);
+			return false;
+		}
+		getServer().getPluginManager().registerEvents(
+			new LevelUpNotifier(getServer(), () -> progressionConfiguration.current().notifications()), this
+		);
+		progressionBars = new ProgressionBarService(this, progressionEngine);
+		progressionBars.start();
+		getServer().getPluginManager().registerEvents(progressionBars, this);
+		credSources = new CredSourceRegistry();
+		for (var entry : progressionConfiguration.current().sources().entrySet()) {
+			CredSource id = entry.getKey();
+			ProgressionSourceConfig source = entry.getValue();
+			credSources.register(id, source.displayName(), source.enabled());
+			if (!source.blockValues().isEmpty()) {
+				getServer().getPluginManager().registerEvents(
+					new MineBlockCredSource(
+						progressionEngine, credSources, id, new MineBlockCredPolicy(source.blockValues())
+					), this
+				);
+			}
+		}
+		getLogger().info(
+			"Progression engine ready (max level " + progressionEngine.maxLevel()
+				+ ", " + credSources.registered().size() + " cred source(s))"
+		);
+		return true;
 	}
 
 	private boolean initializeRanks() {
@@ -387,6 +445,11 @@ public final class TitanMC extends JavaPlugin {
 		if (rankStorage != null) {
 			try { rankStorage.close(); }
 			catch (Exception exception) { getLogger().severe("Failed to close Ranks cleanly: " + exception.getMessage()); }
+		}
+		if (progressionBars != null) progressionBars.close();
+		if (progressionEngine != null) {
+			try { progressionEngine.close(); }
+			catch (Exception exception) { getLogger().severe("Failed to close Progression cleanly: " + exception.getMessage()); }
 		}
 		if (regionEngine != null) {
 			try {

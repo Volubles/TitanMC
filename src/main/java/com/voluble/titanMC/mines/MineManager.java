@@ -12,7 +12,7 @@ import org.bukkit.plugin.Plugin;
 
 import java.util.*;
 
-public final class MineManager {
+public final class MineManager implements MineLookup {
 
 	private final Plugin plugin;
 	private final MineStorage storage;
@@ -112,6 +112,12 @@ public final class MineManager {
 	public void setBatchPerTick(String name, int batch) {
 		Mine mine = requireMine(name);
 		mine.setBatchSizePerTick(batch);
+		storage.saveMine(mine);
+	}
+
+	public void setCredMultiplier(String name, double multiplier) {
+		Mine mine = requireMine(name);
+		mine.setCredMultiplier(multiplier);
 		storage.saveMine(mine);
 	}
 

@@ -1,0 +1,73 @@
+# Titan progression engine
+#
+# A player's total cred determines their main level. Any subsystem can
+# award cred by calling ProgressionEngine.give(...); the sources block
+# below registers the built-in mine-event sources (mining/woodcutting)
+# and lists per-mine-block cred values. Add or remove materials freely.
+
+level-curve:
+  type: polynomial
+  # credForLevel(L) = base * (L - 1) ^ exponent
+  base: 100.0
+  exponent: 1.8
+
+max-level: 100
+
+# Level-up notifications. Messages use MiniMessage tags and the
+# placeholders {player} and {level}. Setting broadcast-every to 0
+# disables server-wide announcements; sound-overrides lets specific
+# levels play a different sound than the default.
+notifications:
+  player-message: "<green>Level up! You are now level <yellow>{level}</yellow>."
+  broadcast-message: "<gold>{player} reached level <yellow>{level}</yellow>!"
+  broadcast-every: 5
+  sound: "entity.player.levelup"
+  broadcast-sound: "entity.experience_orb.pickup"
+  sound-overrides:
+    25: "block.beacon.activate"
+    50: "block.beacon.power_select"
+    100: "ui.toast.challenge_complete"
+
+sources:
+  mining:
+    display-name: Mining
+    enabled: true
+    blocks:
+      stone: 1
+      cobblestone: 1
+      deepslate: 2
+      coal_ore: 3
+      deepslate_coal_ore: 4
+      iron_ore: 5
+      deepslate_iron_ore: 6
+      copper_ore: 4
+      deepslate_copper_ore: 5
+      gold_ore: 10
+      deepslate_gold_ore: 12
+      redstone_ore: 6
+      deepslate_redstone_ore: 7
+      lapis_ore: 8
+      deepslate_lapis_ore: 9
+      diamond_ore: 50
+      deepslate_diamond_ore: 60
+      emerald_ore: 75
+      deepslate_emerald_ore: 90
+      nether_quartz_ore: 4
+      nether_gold_ore: 8
+      ancient_debris: 100
+
+  woodcutting:
+    display-name: Woodcutting
+    enabled: true
+    blocks:
+      oak_log: 2
+      birch_log: 2
+      spruce_log: 2
+      jungle_log: 2
+      acacia_log: 2
+      dark_oak_log: 2
+      cherry_log: 3
+      mangrove_log: 3
+      pale_oak_log: 3
+      crimson_stem: 4
+      warped_stem: 4

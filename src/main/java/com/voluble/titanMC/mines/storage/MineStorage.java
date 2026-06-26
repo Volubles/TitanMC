@@ -76,6 +76,7 @@ public final class MineStorage implements AutoCloseable {
 			int batch = Math.max(1, s.getInt("batch_per_tick", 1500));
 			boolean enabled = s.getBoolean("enabled", true);
 			int autoBelow = s.getInt("auto_reset_below_percent", -1);
+			double credMultiplier = s.getDouble("progression.cred_multiplier", 1.0D);
 
 			ConfigurationSection paletteSec = s.getConfigurationSection("palette");
 			Map<String, Object> paletteMap = paletteSec != null ? paletteSec.getValues(false) : Collections.emptyMap();
@@ -86,6 +87,7 @@ public final class MineStorage implements AutoCloseable {
 			}
 
 			Mine mine = new Mine(name, cuboid, interval, enabled, batch, palette);
+			mine.setCredMultiplier(credMultiplier);
 			String breakMode = s.getString("diggable.mode", "UNRESTRICTED");
 			if ("ALLOW_LIST".equalsIgnoreCase(breakMode)) {
 				Set<Material> materials = new LinkedHashSet<>();
@@ -236,6 +238,7 @@ public final class MineStorage implements AutoCloseable {
 		s.set("batch_per_tick", mine.batchPerTick());
 		s.set("enabled", mine.enabled());
 		s.set("auto_reset_below_percent", mine.autoResetBelowPercent());
+		s.set("progression.cred_multiplier", mine.credMultiplier());
 		s.set("broken_blocks", mine.brokenBlocks());
 		s.set("next_reset_epoch_ms", mine.nextResetEpochMs());
 		s.set("reset.type", mine.resetType());

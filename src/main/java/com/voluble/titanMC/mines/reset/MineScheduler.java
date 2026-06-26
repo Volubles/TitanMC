@@ -11,7 +11,7 @@ import org.bukkit.scheduler.BukkitTask;
 
 import java.util.*;
 
-public final class MineScheduler {
+public final class MineScheduler implements MineResetScheduler {
 
 	private static final long RESET_BUDGET_NANOS = 4_000_000L;
 	private final Plugin plugin;

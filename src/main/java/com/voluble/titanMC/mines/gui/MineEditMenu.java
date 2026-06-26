@@ -46,6 +46,7 @@ public class MineEditMenu {
 				ctx.setItem(9, createIntervalItem(mine.getName(), manager));
 				ctx.setItem(10, createBatchSizeItem(mine.getName(), manager));
 				ctx.setItem(11, createDepletionItem(mine.getName(), manager));
+				ctx.setItem(12, createCredMultiplierItem(mine.getName(), manager));
 
 				Mine current = manager.get(mine.getName());
 				if (current != null && current.getResetDefinition() instanceof MineResetDefinition.Palette) {
@@ -313,6 +314,49 @@ public class MineEditMenu {
 				return true;
 			}
 		};
+	}
+
+	private static MenuItem createCredMultiplierItem(String mineName, MineManager manager) {
+		return new MenuItem() {
+			@Override
+			public ItemStack render(Player viewer) {
+				Mine mine = manager.get(mineName);
+				if (mine == null) {
+					return new ItemStack(Material.BARRIER);
+				}
+				ItemStack item = new ItemStack(Material.EXPERIENCE_BOTTLE);
+				ItemMeta meta = item.getItemMeta();
+				if (meta == null) return item;
+
+				meta.displayName(ChatUtils.formatItem("<aqua><bold>Cred Multiplier"));
+				meta.lore(List.of(
+					ChatUtils.formatItem("<yellow>" + formatMultiplier(mine.getCredMultiplier()) + "x"),
+					ChatUtils.formatItem("<gray>Default: 1.00x"),
+					ChatUtils.formatItem("<gray>Left-click: +0.10x"),
+					ChatUtils.formatItem("<gray>Right-click: -0.10x"),
+					ChatUtils.formatItem("<gray>Shift-click: +/-0.50x")
+				));
+				item.setItemMeta(meta);
+				return item;
+			}
+
+			@Override
+			public boolean onClick(ClickContext ctx) {
+				Mine mine = manager.get(mineName);
+				if (mine == null) return true;
+				double change = ctx.shiftClick() ? 0.50D : 0.10D;
+				double multiplier = ctx.click().toString().contains("LEFT")
+					? mine.getCredMultiplier() + change
+					: mine.getCredMultiplier() - change;
+				manager.setCredMultiplier(mineName, multiplier);
+				ctx.actions().transition(() -> MineEditMenu.open(ctx.player(), manager.get(mineName), manager));
+				return true;
+			}
+		};
+	}
+
+	private static String formatMultiplier(double multiplier) {
+		return String.format(java.util.Locale.ROOT, "%.2f", multiplier);
 	}
 
 	private static MenuItem createPaletteButton(String mineName, MineManager manager) {
