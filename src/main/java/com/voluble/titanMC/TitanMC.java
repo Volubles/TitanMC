@@ -371,14 +371,14 @@ public final class TitanMC extends JavaPlugin {
 			new RankNotificationService(getServer(), displayBroadcastService, rankConfiguration::current),
 			this
 		);
-		registerRankPlaceholders();
+		registerRankPlaceholders(rankEconomy);
 		getLogger().info("Player ranks ready (" + (rankEconomy.available() ? "Vault economy" : "no economy") + ")");
 		return true;
 	}
 
-	private void registerRankPlaceholders() {
+	private void registerRankPlaceholders(RankEconomy rankEconomy) {
 		if (!getServer().getPluginManager().isPluginEnabled("PlaceholderAPI")) return;
-		new RankPlaceholderExpansion(this, rankConfiguration::catalog, rankService).register();
+		new RankPlaceholderExpansion(this, rankConfiguration::catalog, rankService, rankEconomy).register();
 		getLogger().info("PlaceholderAPI rank placeholders registered");
 	}
 
