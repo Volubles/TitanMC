@@ -4,9 +4,9 @@
 # boss bars, menus, signs, and custom flows can keep their own layouts.
 
 templates:
-  info: "<color:#30bbf1>{{message}}</color>"
-  success: "<color:#42d829>{{message}}</color>"
-  error: "<color:#d43030>{{message}}</color>"
+  info: "<glyph:prefix_defaultchat><color:#30bbf1>{{message}}</color>"
+  success: "<glyph:prefix_successchat><color:#42d829>{{message}}</color>"
+  error: "<glyph:prefix_errorchat><color:#d43030>{{message}}</color>"
 
 messages:
   command:
