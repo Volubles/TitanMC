@@ -1,5 +1,7 @@
 package com.voluble.titanMC.cinematics.runtime;
 
+import com.voluble.titanMC.cinematics.runtime.hud.CinematicHudController;
+import com.voluble.titanMC.cinematics.runtime.hud.CinematicHudControllers;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.potion.PotionEffect;
@@ -12,48 +14,39 @@ final class CinematicPlayerPresentation {
 	private final Plugin plugin;
 	private final Player player;
 	private final List<Player> hiddenPlayers;
+	private final CinematicHudController hud;
 	private final PotionEffect previousInvisibility;
-	private final int previousLevel;
-	private final float previousExp;
-	private final int previousTotalExperience;
 
 	private CinematicPlayerPresentation(
 		Plugin plugin,
 		Player player,
 		List<Player> hiddenPlayers,
-		PotionEffect previousInvisibility,
-		int previousLevel,
-		float previousExp,
-		int previousTotalExperience
+		CinematicHudController hud,
+		PotionEffect previousInvisibility
 	) {
 		this.plugin = Objects.requireNonNull(plugin, "plugin");
 		this.player = Objects.requireNonNull(player, "player");
 		this.hiddenPlayers = List.copyOf(hiddenPlayers);
+		this.hud = Objects.requireNonNull(hud, "hud");
 		this.previousInvisibility = previousInvisibility;
-		this.previousLevel = previousLevel;
-		this.previousExp = previousExp;
-		this.previousTotalExperience = previousTotalExperience;
 	}
 
 	static CinematicPlayerPresentation apply(Plugin plugin, Player player) {
 		Objects.requireNonNull(plugin, "plugin");
 		Objects.requireNonNull(player, "player");
 		PotionEffect previous = player.getPotionEffect(PotionEffectType.INVISIBILITY);
-		int previousLevel = player.getLevel();
-		float previousExp = player.getExp();
-		int previousTotalExperience = player.getTotalExperience();
+		CinematicHudController hud = CinematicHudControllers.create(plugin, player);
 		List<Player> others = plugin.getServer().getOnlinePlayers().stream()
 			.map(Player.class::cast)
 			.filter(other -> !other.getUniqueId().equals(player.getUniqueId()))
 			.toList();
 		player.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, PotionEffect.INFINITE_DURATION, 0, false, false));
-		player.setLevel(0);
-		player.setExp(0.0F);
+		hud.apply();
 		for (Player other : others) {
 			other.hidePlayer(plugin, player);
 			player.hidePlayer(plugin, other);
 		}
-		return new CinematicPlayerPresentation(plugin, player, others, previous, previousLevel, previousExp, previousTotalExperience);
+		return new CinematicPlayerPresentation(plugin, player, others, hud, previous);
 	}
 
 	void restore() {
@@ -67,8 +60,6 @@ final class CinematicPlayerPresentation {
 		if (previousInvisibility != null) {
 			player.addPotionEffect(previousInvisibility);
 		}
-		player.setLevel(previousLevel);
-		player.setExp(previousExp);
-		player.setTotalExperience(previousTotalExperience);
+		hud.restore();
 	}
 }

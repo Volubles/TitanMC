@@ -60,12 +60,12 @@ public final class CinematicSession {
 			task = null;
 		}
 		camera.stop();
+		if (restorePlayer && player.isOnline() && playerState != null && definition.camera().restorePlayer()) {
+			playerState.restore(player);
+		}
 		if (presentation != null) {
 			presentation.restore();
 			presentation = null;
-		}
-		if (restorePlayer && player.isOnline() && playerState != null && definition.camera().restorePlayer()) {
-			playerState.restore(player);
 		}
 		completion.accept(player.getUniqueId());
 	}
