@@ -1,6 +1,8 @@
 package com.voluble.titanMC.cinematics.runtime;
 
 import com.voluble.titanMC.cinematics.model.CinematicDefinition;
+import com.voluble.titanMC.cinematics.runtime.camera.CinematicCameraDriver;
+import com.voluble.titanMC.cinematics.runtime.camera.CinematicCameraDrivers;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitTask;
@@ -15,7 +17,9 @@ public final class CinematicSession {
 	private final CinematicDefinition definition;
 	private final Consumer<UUID> completion;
 	private final CinematicEventExecutor events;
+	private final CinematicCameraDriver camera;
 	private CinematicPlayerState playerState;
+	private CinematicPlayerPresentation presentation;
 	private BukkitTask task;
 	private int frame;
 	private boolean stopped;
@@ -31,6 +35,7 @@ public final class CinematicSession {
 		this.definition = Objects.requireNonNull(definition, "definition");
 		this.completion = Objects.requireNonNull(completion, "completion");
 		this.events = new CinematicEventExecutor(plugin);
+		this.camera = CinematicCameraDrivers.create(plugin, player);
 	}
 
 	public UUID playerId() {
@@ -54,6 +59,11 @@ public final class CinematicSession {
 			task.cancel();
 			task = null;
 		}
+		camera.stop();
+		if (presentation != null) {
+			presentation.restore();
+			presentation = null;
+		}
 		if (restorePlayer && player.isOnline() && playerState != null && definition.camera().restorePlayer()) {
 			playerState.restore(player);
 		}
@@ -62,9 +72,11 @@ public final class CinematicSession {
 
 	private void setup() {
 		playerState = CinematicPlayerState.capture(player);
+		presentation = CinematicPlayerPresentation.apply(plugin, player);
 		player.setAllowFlight(true);
 		player.setFlying(true);
 		player.setInvulnerable(true);
+		camera.start(CameraPathInterpolator.locationAt(definition.camera().points(), 0));
 	}
 
 	private void tick() {
@@ -77,7 +89,7 @@ public final class CinematicSession {
 				stop(true);
 				return;
 			}
-			player.teleport(CameraPathInterpolator.locationAt(definition.camera().points(), frame));
+			camera.move(frame, CameraPathInterpolator.locationAt(definition.camera().points(), frame));
 			for (var event : definition.timeline().atTick(frame)) {
 				events.execute(player, event);
 			}

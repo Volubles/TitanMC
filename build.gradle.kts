@@ -25,6 +25,15 @@ repositories {
     maven("https://repo.codemc.org/repository/maven-public/") {
         name = "codemc"
     }
+    maven("https://repo.codemc.io/repository/maven-releases/") {
+        name = "codemcReleases"
+    }
+    maven("https://repo.codemc.io/repository/maven-snapshots/") {
+        name = "codemcSnapshots"
+    }
+    maven("https://maven.typewritermc.com/external") {
+        name = "typewriterExternal"
+    }
     maven("https://repo.fancyplugins.de/releases") {
         name = "fancyplugins"
     }
@@ -37,6 +46,8 @@ dependencies {
     compileOnly("me.clip:placeholderapi:2.11.6")
     compileOnly("net.skinsrestorer:skinsrestorer-api:15.10.2")
     compileOnly("de.oliver:FancyNpcs:2.8.0")
+    compileOnly("com.github.retrooper:packetevents-api:2.11.1")
+    compileOnly("com.github.retrooper:packetevents-spigot:2.11.1")
 
     // This is installed locally by the MichelleLib Maven project. Its provided
     // dependencies belong to the server, so only MichelleLib itself is shaded.
@@ -44,6 +55,10 @@ dependencies {
         isTransitive = false
     }
     implementation("org.xerial:sqlite-jdbc:3.53.2.0")
+    implementation("me.tofaa2:spigot:3.2.0-SNAPSHOT") {
+        exclude(group = "com.github.retrooper", module = "packetevents-api")
+        exclude(group = "com.github.retrooper", module = "packetevents-spigot")
+    }
 
     testImplementation(platform("org.junit:junit-bom:6.0.3"))
     testImplementation("org.junit.jupiter:junit-jupiter")
