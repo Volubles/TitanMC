@@ -350,6 +350,59 @@ public final class MessageDefaults {
 		"milestones.reset", MessageType.SUCCESS, "Reset milestone progress for {{player}}."
 	);
 
+	public static final MessageDefinition OUTFITS_FIRST_JOIN_PROMPT = lines(
+		"outfits.first-join-prompt", MessageType.INFO,
+		"Want a server outfit? Use /outfit to choose one, or /outfit use original to keep your skin."
+	);
+	public static final MessageDefinition OUTFITS_HEADER = message(
+		"outfits.header", MessageType.INFO, "Available outfits:"
+	);
+	public static final MessageDefinition OUTFITS_LIST_ENTRY = message(
+		"outfits.list-entry", MessageType.INFO, "{{id}} - {{name}}"
+	);
+	public static final MessageDefinition OUTFITS_USE_HINT = message(
+		"outfits.use-hint", MessageType.INFO, "Use /outfit use <id> or /outfit use original."
+	);
+	public static final MessageDefinition OUTFITS_RELOADED = message(
+		"outfits.reloaded", MessageType.SUCCESS, "Outfits reloaded."
+	);
+	public static final MessageDefinition OUTFITS_STATUS = message(
+		"outfits.status", MessageType.INFO, "Outfits enabled: {{enabled}}, configured outfits: {{outfits}}"
+	);
+	public static final MessageDefinition OUTFITS_APPLYING = message(
+		"outfits.applying", MessageType.INFO, "Preparing outfit {{outfit}}. This may take a few seconds."
+	);
+	public static final MessageDefinition OUTFITS_APPLYING_ORIGINAL = message(
+		"outfits.applying-original", MessageType.INFO, "Restoring your original skin."
+	);
+	public static final MessageDefinition OUTFITS_APPLIED = message(
+		"outfits.applied", MessageType.SUCCESS, "Applied outfit {{outfit}}."
+	);
+	public static final MessageDefinition OUTFITS_ORIGINAL = message(
+		"outfits.original", MessageType.SUCCESS, "Your original skin is active."
+	);
+	public static final MessageDefinition OUTFITS_DISABLED = message(
+		"outfits.disabled", MessageType.ERROR, "Outfits are currently disabled."
+	);
+	public static final MessageDefinition OUTFITS_UNKNOWN = message(
+		"outfits.unknown", MessageType.ERROR, "Unknown outfit: {{outfit}}"
+	);
+	public static final MessageDefinition OUTFITS_NO_MINESKIN_KEY = message(
+		"outfits.no-mineskin-key", MessageType.ERROR, "MineSkin is not configured yet."
+	);
+	public static final MessageDefinition OUTFITS_NO_ORIGINAL_SKIN = message(
+		"outfits.no-original-skin", MessageType.ERROR, "Could not read your current skin."
+	);
+	public static final MessageDefinition OUTFITS_SKINS_RESTORER_UNAVAILABLE = message(
+		"outfits.skins-restorer-unavailable", MessageType.ERROR, "SkinsRestorer is not available."
+	);
+	public static final MessageDefinition OUTFITS_BUSY = message(
+		"outfits.busy", MessageType.ERROR, "Your outfit is already being prepared."
+	);
+	public static final MessageDefinition OUTFITS_FAILED = message(
+		"outfits.failed", MessageType.ERROR, "The outfit could not be applied. Check the server log."
+	);
+
 	public static final MessageDefinition MINES_LIST = message(
 		"mines.list", MessageType.INFO, "Mines: {{mines}}"
 	);

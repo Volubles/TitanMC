@@ -22,6 +22,9 @@ repositories {
     maven("https://maven.enginehub.org/repo/")
     maven("https://jitpack.io")
     maven("https://repo.extendedclip.com/releases/")
+    maven("https://repo.codemc.org/repository/maven-public/") {
+        name = "codemc"
+    }
 }
 
 dependencies {
@@ -29,6 +32,7 @@ dependencies {
     compileOnly("com.sk89q.worldedit:worldedit-bukkit:7.4.2")
     compileOnly("com.github.MilkBowl:VaultAPI:1.7")
     compileOnly("me.clip:placeholderapi:2.11.6")
+    compileOnly("net.skinsrestorer:skinsrestorer-api:15.10.2")
 
     // This is installed locally by the MichelleLib Maven project. Its provided
     // dependencies belong to the server, so only MichelleLib itself is shaded.

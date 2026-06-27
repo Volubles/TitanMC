@@ -1,0 +1,18 @@
+enabled: true
+
+first-join:
+  prompt: true
+  delay-ticks: 60
+
+integrations:
+  mineskin:
+    api-key: ""
+    api-key-env: "TITANMC_MINESKIN_API_KEY"
+
+outfits:
+  prison:
+    display-name: "Prison Outfit"
+    description:
+      - "Orange prison uniform using your own head."
+    template: "templates/prison_classic.png"
+    model: CLASSIC

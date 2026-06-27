@@ -50,6 +50,16 @@ import com.voluble.titanMC.mines.reset.MineScheduler;
 import com.voluble.titanMC.mines.listeners.MineBlockListener;
 import com.voluble.titanMC.mines.breaking.MineBlockAccess;
 import com.voluble.titanMC.mines.breaking.MineBlockAccessListener;
+import com.voluble.titanMC.outfits.OutfitService;
+import com.voluble.titanMC.outfits.bukkit.OutfitJoinListener;
+import com.voluble.titanMC.outfits.command.OutfitCommandModule;
+import com.voluble.titanMC.outfits.config.OutfitConfigurationManager;
+import com.voluble.titanMC.outfits.persistence.OutfitStorage;
+import com.voluble.titanMC.outfits.skin.MineSkinClient;
+import com.voluble.titanMC.outfits.skin.OutfitSkinComposer;
+import com.voluble.titanMC.outfits.skin.PlayerSkinSource;
+import com.voluble.titanMC.outfits.skin.SkinApplier;
+import com.voluble.titanMC.outfits.skin.SkinsRestorerSkinApplier;
 import com.voluble.titanMC.regions.persistence.RegionStorageException;
 import com.voluble.titanMC.regions.protection.bukkit.BlockProtectionListener;
 import com.voluble.titanMC.regions.protection.bukkit.BlockAutomationProtectionListener;
@@ -145,6 +155,8 @@ public final class TitanMC extends JavaPlugin {
 	private DisplayBroadcastService displayBroadcastService;
 	private MessageConfigurationManager messageConfiguration;
 	private PluginMessageService messages;
+	private OutfitConfigurationManager outfitConfiguration;
+	private OutfitService outfitService;
 
 	@Override
 	public void onEnable() {
@@ -175,12 +187,14 @@ public final class TitanMC extends JavaPlugin {
 		rankConfiguration = new RankConfigurationManager(this);
 		progressionConfiguration = new ProgressionConfigurationManager(this);
 		milestoneConfiguration = new MilestoneConfigurationManager(this);
+		outfitConfiguration = new OutfitConfigurationManager(this);
 		messageConfiguration = new MessageConfigurationManager(this, MessageDefaults.all());
 		try {
 			configManager.registerComponent(messageConfiguration);
 			configManager.registerComponent(rankConfiguration);
 			configManager.registerComponent(progressionConfiguration);
 			configManager.registerComponent(milestoneConfiguration);
+			configManager.registerComponent(outfitConfiguration);
 			configManager.registerComponent(donatorToolsConfiguration);
 			configManager.registerComponent(cellsConfiguration);
 			configManager.registerComponent(auctionConfiguration);
@@ -199,6 +213,7 @@ public final class TitanMC extends JavaPlugin {
 		if (!initializeRanks()) return;
 		if (!initializeProgression()) return;
 		if (!initializeMilestones()) return;
+		if (!initializeOutfits()) return;
 		registerTitanPlaceholders();
 		managedBlockAccess = new ManagedBlockAccessRegistry(getLogger());
 		if (!initializeProtection()) return;
@@ -316,6 +331,7 @@ public final class TitanMC extends JavaPlugin {
 			.addModule(new RankCommandModule(rankConfiguration.catalog(), rankService, rankupService, messages))
 			.addModule(new CredCommandModule(progressionEngine, progressionBars, messages))
 			.addModule(new MilestoneCommandModule(milestoneMenus, milestoneConfiguration, milestoneService, messages))
+			.addModule(new OutfitCommandModule(outfitConfiguration, outfitService, messages))
 			.install();
 
 		getLogger().info("TitanMC has been enabled!");
@@ -425,6 +441,38 @@ public final class TitanMC extends JavaPlugin {
 		);
 		getLogger().info("Player ranks ready (" + (rankEconomy.available() ? "Vault economy" : "no economy") + ")");
 		return true;
+	}
+
+	private boolean initializeOutfits() {
+		try {
+			outfitService = new OutfitService(
+				this,
+				outfitConfiguration,
+				new OutfitStorage(ComponentFiles.resolveData(getDataFolder().toPath(), "outfits", "outfits.db")),
+				skinApplier(),
+				new PlayerSkinSource(),
+				new OutfitSkinComposer(),
+				new MineSkinClient(),
+				getLogger()
+			);
+		} catch (java.sql.SQLException exception) {
+			getLogger().severe("Failed to open outfit storage: " + exception.getMessage());
+			getServer().getPluginManager().disablePlugin(this);
+			return false;
+		}
+		getServer().getPluginManager().registerEvents(
+			new OutfitJoinListener(this, outfitConfiguration, outfitService, messages), this
+		);
+		getLogger().info("Outfits ready");
+		return true;
+	}
+
+	private SkinApplier skinApplier() {
+		if (!getServer().getPluginManager().isPluginEnabled("SkinsRestorer")) {
+			getLogger().warning("SkinsRestorer is not installed; outfit skins cannot be applied yet");
+			return SkinApplier.unavailable();
+		}
+		return new SkinsRestorerSkinApplier();
 	}
 
 	private void registerTitanPlaceholders() {
@@ -538,6 +586,10 @@ public final class TitanMC extends JavaPlugin {
 		if (milestoneService != null) {
 			try { milestoneService.close(); }
 			catch (Exception exception) { getLogger().severe("Failed to close Milestones cleanly: " + exception.getMessage()); }
+		}
+		if (outfitService != null) {
+			try { outfitService.close(); }
+			catch (Exception exception) { getLogger().severe("Failed to close Outfits cleanly: " + exception.getMessage()); }
 		}
 		if (regionEngine != null) {
 			try {

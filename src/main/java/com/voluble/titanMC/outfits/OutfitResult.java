@@ -1,0 +1,13 @@
+package com.voluble.titanMC.outfits;
+
+public enum OutfitResult {
+	APPLIED,
+	ORIGINAL,
+	DISABLED,
+	UNKNOWN_OUTFIT,
+	NO_MINESKIN_KEY,
+	NO_ORIGINAL_SKIN,
+	SKINS_RESTORER_UNAVAILABLE,
+	BUSY,
+	FAILED
+}
