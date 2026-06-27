@@ -25,9 +25,6 @@ import java.util.Queue;
 import java.util.UUID;
 
 public final class MilestoneNotificationDispatcher {
-	private static final long INITIAL_DELAY_TICKS = 50L;
-	private static final long SPACING_TICKS = 20L;
-
 	private final Plugin plugin;
 	private final Server server;
 	private final MilestoneConfigurationManager configuration;
@@ -50,7 +47,7 @@ public final class MilestoneNotificationDispatcher {
 
 	public void enqueue(Player player, MilestoneTrack track, MilestoneTier tier, String rewardText) {
 		queue.add(NotificationContext.of(player, track, tier, rewardText));
-		if (task == null) schedule(INITIAL_DELAY_TICKS);
+		if (task == null) schedule(configuration.current().notifications().completion().initialDelayTicks());
 	}
 
 	private void schedule(long delayTicks) {
@@ -64,7 +61,7 @@ public final class MilestoneNotificationDispatcher {
 			task = null;
 			return;
 		}
-		schedule(SPACING_TICKS);
+		schedule(configuration.current().notifications().completion().spacingTicks());
 	}
 
 	private void notify(NotificationContext context) {

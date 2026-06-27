@@ -142,6 +142,8 @@ public record MilestoneConfiguration(
 		if (completion == null) {
 			return new MilestoneNotificationConfig(new MilestoneNotificationConfig.Completion(
 				true,
+				50L,
+				20L,
 				true,
 				true,
 				List.of("<green>Milestone completed: <yellow>{milestone}</yellow>"),
@@ -153,6 +155,8 @@ public record MilestoneConfiguration(
 		ConfigurationSection broadcast = completion.getConfigurationSection("broadcast");
 		return new MilestoneNotificationConfig(new MilestoneNotificationConfig.Completion(
 			completion.getBoolean("enabled", true),
+			longValue(completion, "initial-delay-ticks", 50L),
+			longValue(completion, "spacing-ticks", 20L),
 			playerMessage == null || playerMessage.getBoolean("enabled", true),
 			playerMessage == null || booleanValue(playerMessage, "centered", true),
 			playerMessage == null
@@ -180,6 +184,18 @@ public record MilestoneConfiguration(
 			throw new IllegalArgumentException(section.getCurrentPath() + "." + key + " must be true or false");
 		}
 		return section.getBoolean(key);
+	}
+
+	private static long longValue(ConfigurationSection section, String key, long fallback) {
+		if (!section.contains(key)) return fallback;
+		if (!section.isLong(key) && !section.isInt(key)) {
+			throw new IllegalArgumentException(section.getCurrentPath() + "." + key + " must be a number");
+		}
+		long value = section.getLong(key);
+		if (value < 0L) {
+			throw new IllegalArgumentException(section.getCurrentPath() + "." + key + " must not be negative");
+		}
+		return value;
 	}
 
 	private static MilestoneMetric metric(ConfigurationSection section, String key) {

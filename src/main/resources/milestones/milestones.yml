@@ -12,6 +12,10 @@ menus:
 notifications:
   completion:
     enabled: true
+    # 20 ticks = 1 second. The first message waits 50 ticks (2.5 seconds)
+    # so rankups and other primary announcements can finish first.
+    initial-delay-ticks: 50
+    spacing-ticks: 20
     player-message:
       enabled: true
       centered: true
