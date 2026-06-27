@@ -403,6 +403,34 @@ public final class MessageDefaults {
 		"outfits.failed", MessageType.ERROR, "The outfit could not be applied. Check the server log."
 	);
 
+	public static final MessageDefinition CINEMATICS_LIST = message(
+		"cinematics.list", MessageType.INFO, "Cinematics: {{cinematics}}"
+	);
+	public static final MessageDefinition CINEMATICS_RELOADED = message(
+		"cinematics.reloaded", MessageType.SUCCESS, "Cinematics reloaded."
+	);
+	public static final MessageDefinition CINEMATICS_CREATED = message(
+		"cinematics.created", MessageType.SUCCESS, "Created cinematic {{cinematic}}."
+	);
+	public static final MessageDefinition CINEMATICS_STARTED = message(
+		"cinematics.started", MessageType.SUCCESS, "Started cinematic {{cinematic}}."
+	);
+	public static final MessageDefinition CINEMATICS_STOPPED = message(
+		"cinematics.stopped", MessageType.SUCCESS, "Stopped cinematic."
+	);
+	public static final MessageDefinition CINEMATICS_NOT_ACTIVE = message(
+		"cinematics.not-active", MessageType.ERROR, "You are not in a cinematic."
+	);
+	public static final MessageDefinition CINEMATICS_DISABLED = message(
+		"cinematics.disabled", MessageType.ERROR, "Cinematics are currently disabled."
+	);
+	public static final MessageDefinition CINEMATICS_UNKNOWN = message(
+		"cinematics.unknown", MessageType.ERROR, "Unknown cinematic: {{cinematic}}"
+	);
+	public static final MessageDefinition CINEMATICS_POINT_ADDED = message(
+		"cinematics.point-added", MessageType.SUCCESS, "Added camera point to {{cinematic}} at tick {{tick}}."
+	);
+
 	public static final MessageDefinition MINES_LIST = message(
 		"mines.list", MessageType.INFO, "Mines: {{mines}}"
 	);

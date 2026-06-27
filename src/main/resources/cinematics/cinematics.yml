@@ -1,0 +1,26 @@
+enabled: true
+
+defaults:
+  point-duration-ticks: 40
+  restore-player: true
+
+cinematics:
+  onboarding_intro:
+    duration-ticks: 120
+    camera:
+      restore-player: true
+      points:
+        - tick: 0
+          world: world
+          x: 0.5
+          y: 80.0
+          z: 0.5
+          yaw: 0.0
+          pitch: 0.0
+        - tick: 120
+          world: world
+          x: 0.5
+          y: 80.0
+          z: 0.5
+          yaw: 0.0
+          pitch: 0.0

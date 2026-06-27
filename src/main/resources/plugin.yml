@@ -2,7 +2,7 @@ name: TitanMC
 version: '1.0-SNAPSHOT'
 main: com.voluble.titanMC.TitanMC
 api-version: '1.21'
-softdepend: [Vault, LuckPerms, WorldEdit, FastAsyncWorldEdit, PlaceholderAPI, SkinsRestorer]
+softdepend: [Vault, LuckPerms, WorldEdit, FastAsyncWorldEdit, PlaceholderAPI, SkinsRestorer, FancyNpcs]
 commands:
   dtools:
     description: Give a donator tool
@@ -41,6 +41,11 @@ commands:
     description: Choose a server outfit
     usage: /outfit [use <outfit|original>|status|reload]
     permission: titanmc.outfits.use
+  cinematic:
+    aliases: [cinematics]
+    description: Manage Titan cinematics
+    usage: /cinematic <list|reload|create|play|stop|point>
+    permission: titanmc.cinematic.admin
 permissions:
   donatortools.give:
     description: Allows giving donator tools
@@ -93,6 +98,9 @@ permissions:
     default: true
   titanmc.outfits.admin:
     description: Allows reloading outfit configuration
+    default: op
+  titanmc.cinematic.admin:
+    description: Allows managing Titan cinematics
     default: op
   titanmc.protection.bypass:
     description: Bypasses Titan region protection

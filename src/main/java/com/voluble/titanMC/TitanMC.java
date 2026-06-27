@@ -21,6 +21,10 @@ import com.voluble.titanMC.cells.region.CellRegionService;
 import com.voluble.titanMC.cells.CellSignRenderer;
 import com.voluble.titanMC.cells.CellManagementService;
 import com.voluble.titanMC.cells.ui.CellMenuService;
+import com.voluble.titanMC.cinematics.bukkit.CinematicListener;
+import com.voluble.titanMC.cinematics.command.CinematicCommandModule;
+import com.voluble.titanMC.cinematics.config.CinematicConfigurationManager;
+import com.voluble.titanMC.cinematics.runtime.CinematicRuntime;
 import com.voluble.titanMC.managers.ConfigManager;
 import com.voluble.titanMC.donatortools.DonatorToolsService;
 import com.voluble.titanMC.donatortools.command.DonatorToolsCommandModule;
@@ -157,6 +161,8 @@ public final class TitanMC extends JavaPlugin {
 	private PluginMessageService messages;
 	private OutfitConfigurationManager outfitConfiguration;
 	private OutfitService outfitService;
+	private CinematicConfigurationManager cinematicConfiguration;
+	private CinematicRuntime cinematicRuntime;
 
 	@Override
 	public void onEnable() {
@@ -188,6 +194,7 @@ public final class TitanMC extends JavaPlugin {
 		progressionConfiguration = new ProgressionConfigurationManager(this);
 		milestoneConfiguration = new MilestoneConfigurationManager(this);
 		outfitConfiguration = new OutfitConfigurationManager(this);
+		cinematicConfiguration = new CinematicConfigurationManager(this);
 		messageConfiguration = new MessageConfigurationManager(this, MessageDefaults.all());
 		try {
 			configManager.registerComponent(messageConfiguration);
@@ -195,6 +202,7 @@ public final class TitanMC extends JavaPlugin {
 			configManager.registerComponent(progressionConfiguration);
 			configManager.registerComponent(milestoneConfiguration);
 			configManager.registerComponent(outfitConfiguration);
+			configManager.registerComponent(cinematicConfiguration);
 			configManager.registerComponent(donatorToolsConfiguration);
 			configManager.registerComponent(cellsConfiguration);
 			configManager.registerComponent(auctionConfiguration);
@@ -214,6 +222,7 @@ public final class TitanMC extends JavaPlugin {
 		if (!initializeProgression()) return;
 		if (!initializeMilestones()) return;
 		if (!initializeOutfits()) return;
+		initializeCinematics();
 		registerTitanPlaceholders();
 		managedBlockAccess = new ManagedBlockAccessRegistry(getLogger());
 		if (!initializeProtection()) return;
@@ -332,6 +341,7 @@ public final class TitanMC extends JavaPlugin {
 			.addModule(new CredCommandModule(progressionEngine, progressionBars, messages))
 			.addModule(new MilestoneCommandModule(milestoneMenus, milestoneConfiguration, milestoneService, messages))
 			.addModule(new OutfitCommandModule(outfitConfiguration, outfitService, messages))
+			.addModule(new CinematicCommandModule(cinematicConfiguration, cinematicRuntime, messages))
 			.install();
 
 		getLogger().info("TitanMC has been enabled!");
@@ -467,6 +477,12 @@ public final class TitanMC extends JavaPlugin {
 		return true;
 	}
 
+	private void initializeCinematics() {
+		cinematicRuntime = new CinematicRuntime(this, cinematicConfiguration);
+		getServer().getPluginManager().registerEvents(new CinematicListener(cinematicRuntime), this);
+		getLogger().info("Cinematics ready");
+	}
+
 	private SkinApplier skinApplier() {
 		if (!getServer().getPluginManager().isPluginEnabled("SkinsRestorer")) {
 			getLogger().warning("SkinsRestorer is not installed; outfit skins cannot be applied yet");
@@ -591,6 +607,7 @@ public final class TitanMC extends JavaPlugin {
 			try { outfitService.close(); }
 			catch (Exception exception) { getLogger().severe("Failed to close Outfits cleanly: " + exception.getMessage()); }
 		}
+		if (cinematicRuntime != null) cinematicRuntime.close();
 		if (regionEngine != null) {
 			try {
 				regionEngine.close();
@@ -619,4 +636,5 @@ public final class TitanMC extends JavaPlugin {
 	public RankCatalog getRanks() { return rankConfiguration.catalog(); }
 	public DisplayBroadcastService getDisplayBroadcastService() { return displayBroadcastService; }
 	public PluginMessageService getMessages() { return messages; }
+	public CinematicRuntime getCinematicRuntime() { return cinematicRuntime; }
 }
