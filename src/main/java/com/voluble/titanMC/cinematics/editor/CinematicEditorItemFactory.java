@@ -10,6 +10,7 @@ import com.voluble.titanMC.util.ChatUtils;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.ArrayList;
@@ -50,6 +51,27 @@ final class CinematicEditorItemFactory {
 	}
 
 	ItemStack event(CinematicEvent event) {
+		List<String> lore = eventLore(event);
+		lore.add("");
+		lore.add("<green>Click to edit this event.");
+		return item(material(event), name(event), lore);
+	}
+
+	ItemStack selectedEvent(CinematicEvent event) {
+		List<String> lore = eventLore(event);
+		lore.add("");
+		lore.add("<#30bbf1>You are editing this event.");
+		ItemStack stack = item(material(event), name(event), lore);
+		ItemMeta meta = stack.getItemMeta();
+		if (meta != null) {
+			meta.setEnchantmentGlintOverride(true);
+			meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
+			stack.setItemMeta(meta);
+		}
+		return stack;
+	}
+
+	private List<String> eventLore(CinematicEvent event) {
 		List<String> lore = new ArrayList<>();
 		lore.add("<gray>Canvas slot: <white>" + event.timelineSlot());
 		lore.add("<gray>Tick: <white>" + CinematicTimeFormat.tickTime(event.tick()));
@@ -71,9 +93,7 @@ final class CinematicEditorItemFactory {
 				lore.add("<gray>Category: <white>" + sound.category());
 			}
 		}
-		lore.add("");
-		lore.add("<green>Click to edit this event.");
-		return item(material(event), name(event), lore);
+		return lore;
 	}
 
 	ItemStack summary(CinematicDefinition definition, CinematicTimelineViewport viewport) {

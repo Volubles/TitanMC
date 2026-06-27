@@ -27,13 +27,13 @@ final class CommandEventOptionsMenu {
 		MenuDefinition.chest(3)
 			.title(MiniMessage.miniMessage().deserialize("<#f7d774>Command Event <gray>| Slot <white>" + event.timelineSlot()))
 			.onOpen(context -> {
-				context.setItem(10, CinematicEditorChrome.display(items.event(event)));
-				context.setItem(11, button(Material.PAPER, "<#f7d774><bold>Set Command", List.of(
+				context.setItem(4, CinematicEditorChrome.display(items.selectedEvent(event)));
+				context.setItem(10, button(Material.PAPER, "<#f7d774><bold>Set Command", List.of(
 					"<gray>Current: <white>" + event.command(),
 					"<green>Click to type a command."
 				), click -> prompt(player, event, "Type the command without a leading slash.", value ->
 					new CommandCinematicEvent(event.tick(), event.timelineSlot(), event.row(), value, event.console()))));
-				context.setItem(12, button(Material.COMPARATOR, "<#30bbf1><bold>Toggle Sender", List.of(
+				context.setItem(11, button(Material.COMPARATOR, "<#30bbf1><bold>Toggle Sender", List.of(
 					"<gray>Current: <white>" + (event.console() ? "Console" : "Player"),
 					"<green>Click to toggle."
 				), click -> {
@@ -41,9 +41,9 @@ final class CommandEventOptionsMenu {
 					editor.replaceEvent(player, event, updated);
 					click.actions().transition(() -> open(player, updated));
 				}));
-				context.setItem(13, numeric(player, event, Material.CLOCK, "<#f7d774><bold>Set Tick", "Type the new tick.", value ->
+				context.setItem(12, promptButton(player, event, Material.CLOCK, "<#f7d774><bold>Set Tick", CinematicEditorLore.edit("Current tick", CinematicTimeFormat.tickTime(event.tick())), "Type the new tick.", value ->
 					new CommandCinematicEvent(CinematicEditorParsing.nonNegativeInt(value), event.timelineSlot(), event.row(), event.command(), event.console())));
-				context.setItem(14, numeric(player, event, Material.HOPPER, "<#f7d774><bold>Set Row", "Type the new row. Row 0 is reserved for cameras.", value ->
+				context.setItem(13, promptButton(player, event, Material.HOPPER, "<#f7d774><bold>Set Row", CinematicEditorLore.edit("Current row", String.valueOf(event.row())), "Type the new row. Row 0 is reserved for cameras.", value ->
 					new CommandCinematicEvent(event.tick(), event.timelineSlot(), CinematicEditorParsing.positiveInt(value), event.command(), event.console())));
 				context.setItem(15, button(Material.REDSTONE_BLOCK, "<#d43030><bold>Delete", List.of("<gray>Remove this command event."), click -> {
 					editor.removeEvent(player, event);
@@ -80,18 +80,16 @@ final class CommandEventOptionsMenu {
 			.open(menus, player);
 	}
 
-	private io.voluble.michellelib.menu.item.MenuItem numeric(
+	private io.voluble.michellelib.menu.item.MenuItem promptButton(
 		Player player,
 		CommandCinematicEvent event,
 		Material material,
 		String name,
+		List<String> lore,
 		String prompt,
 		Function<String, CommandCinematicEvent> mapper
 	) {
-		return button(material, name, List.of(
-			"<gray>Current slot: <white>" + event.timelineSlot(),
-			"<gray>Current tick/row: <white>" + event.tick() + " / " + event.row()
-		), click ->
+		return button(material, name, lore, click ->
 			prompt(player, event, prompt, mapper));
 	}
 
