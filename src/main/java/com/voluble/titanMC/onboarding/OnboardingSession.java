@@ -7,7 +7,6 @@ import com.voluble.titanMC.display.notice.PluginMessageService;
 import com.voluble.titanMC.onboarding.config.OnboardingConfiguration;
 import com.voluble.titanMC.onboarding.persistence.OnboardingStorage;
 import com.voluble.titanMC.onboarding.preview.OutfitPreview;
-import com.voluble.titanMC.onboarding.preview.PreviewException;
 import com.voluble.titanMC.outfits.OutfitResult;
 import com.voluble.titanMC.outfits.OutfitService;
 import com.voluble.titanMC.outfits.config.OutfitConfigurationManager;
@@ -141,16 +140,20 @@ public final class OnboardingSession {
 				messages.send(player, MessageDefaults.ONBOARDING_PREVIEW_FAILED);
 				return;
 			}
-			try {
-				preview.show(player, new OutfitPreview.PreviewModel(
+			preview.show(player, new OutfitPreview.PreviewModel(
 					name,
 					configuration.previewStage(),
 					prepared.property()
-				));
-			} catch (PreviewException exception) {
-				logger.log(Level.WARNING, "Failed to show onboarding preview for " + player.getUniqueId(), exception);
-				messages.send(player, MessageDefaults.ONBOARDING_PREVIEW_FAILED);
-			}
+				))
+				.whenComplete((ignored, failure) -> {
+					if (stopping || generation != previewGeneration) {
+						if (failure == null) preview.remove(player);
+						return;
+					}
+					if (failure == null) return;
+					logger.log(Level.WARNING, "Failed to show onboarding preview for " + player.getUniqueId(), failure);
+					messages.send(player, MessageDefaults.ONBOARDING_PREVIEW_FAILED);
+				});
 		});
 	}
 

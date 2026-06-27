@@ -531,7 +531,7 @@ public final class TitanMC extends JavaPlugin {
 			getLogger().warning("FancyNPCs is not installed; onboarding outfit previews are disabled");
 			return new UnavailableOutfitPreview();
 		}
-		return new FancyNpcOutfitPreview();
+		return new FancyNpcOutfitPreview(this);
 	}
 
 	private SkinApplier skinApplier() {

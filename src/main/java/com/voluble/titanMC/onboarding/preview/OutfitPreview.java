@@ -4,10 +4,12 @@ import com.voluble.titanMC.outfits.skin.SkinPropertyData;
 import com.voluble.titanMC.onboarding.config.OnboardingPreviewStage;
 import org.bukkit.entity.Player;
 
+import java.util.concurrent.CompletionStage;
+
 public interface OutfitPreview {
 	boolean available();
 
-	void show(Player player, PreviewModel model) throws PreviewException;
+	CompletionStage<Void> show(Player player, PreviewModel model);
 
 	void remove(Player player);
 
