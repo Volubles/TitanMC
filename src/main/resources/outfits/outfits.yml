@@ -16,5 +16,6 @@ outfits:
     description:
       - "Orange prison uniform using your own head."
     render-mode: "composite"
+    skin-model: "classic"
     classic-template: "templates/prison_classic.png"
     slim-template: "templates/prison_slim.png"

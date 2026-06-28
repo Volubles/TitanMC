@@ -226,7 +226,7 @@ public final class OutfitService implements AutoCloseable {
 			if (originalSkin == null && outfit.renderMode() == OutfitRenderMode.COMPOSITE) {
 				return PreparedOutfitSkin.failed(OutfitResult.NO_ORIGINAL_SKIN);
 			}
-			SkinModel model = originalSkin == null ? SkinModel.CLASSIC : originalSkin.model();
+			SkinModel model = skinModel(outfit, originalSkin);
 			Path template = outfit.templatePath(model);
 			String originalHash = originalSkin == null ? "full-skin" : SkinHash.sha256(originalSkin.url().toString());
 			String templateHash = SkinHash.sha256(template);
@@ -270,6 +270,10 @@ public final class OutfitService implements AutoCloseable {
 		return skinApplier.resolveOriginal(playerName)
 			.flatMap(skinSource::skin)
 			.orElse(null);
+	}
+
+	private SkinModel skinModel(OutfitDefinition outfit, PlayerSkin originalSkin) {
+		return outfit.renderMode() == OutfitRenderMode.FULL_SKIN ? outfit.skinModel() : originalSkin.model();
 	}
 
 	@Override

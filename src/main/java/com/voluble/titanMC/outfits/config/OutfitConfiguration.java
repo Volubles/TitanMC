@@ -3,6 +3,7 @@ package com.voluble.titanMC.outfits.config;
 import com.voluble.titanMC.outfits.model.OutfitDefinition;
 import com.voluble.titanMC.outfits.model.OutfitId;
 import com.voluble.titanMC.outfits.model.OutfitRenderMode;
+import com.voluble.titanMC.outfits.model.SkinModel;
 import com.voluble.titanMC.outfits.skin.MineSkinVisibility;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -61,6 +62,7 @@ public record OutfitConfiguration(
 				entry.getString("display-name", id.value()),
 				entry.getStringList("description"),
 				OutfitRenderMode.parse(entry.getString("render-mode", "composite")),
+				SkinModel.parse(entry.getString("skin-model", entry.getString("model", "classic"))),
 				folder.resolve(classicTemplate).normalize(),
 				folder.resolve(slimTemplate).normalize()
 			);

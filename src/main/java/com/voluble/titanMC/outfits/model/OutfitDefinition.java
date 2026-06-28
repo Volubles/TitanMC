@@ -9,6 +9,7 @@ public record OutfitDefinition(
 	String displayName,
 	List<String> description,
 	OutfitRenderMode renderMode,
+	SkinModel skinModel,
 	Path classicTemplatePath,
 	Path slimTemplatePath
 ) {
@@ -17,6 +18,7 @@ public record OutfitDefinition(
 		displayName = requireText(displayName, "displayName");
 		description = List.copyOf(Objects.requireNonNull(description, "description"));
 		Objects.requireNonNull(renderMode, "renderMode");
+		Objects.requireNonNull(skinModel, "skinModel");
 		Objects.requireNonNull(classicTemplatePath, "classicTemplatePath");
 		Objects.requireNonNull(slimTemplatePath, "slimTemplatePath");
 	}
