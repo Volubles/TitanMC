@@ -74,7 +74,7 @@ public final class PreviewActor {
 			current = focus.clone();
 			state = PreviewActorState.FOCUSED;
 			npc.teleport(toPacketLocation(current));
-			npc.rotateHead(toPacketLocation(current));
+			rotateHead(current);
 			result.complete(null);
 		});
 		return result;
@@ -83,6 +83,7 @@ public final class PreviewActor {
 	public void stageAt(Location location) {
 		state = PreviewActorState.STAGED;
 		spawnAt(location);
+		rotateHead(location);
 	}
 
 	public CompletableFuture<Void> stageAtLater(Location location, long delayTicks) {
@@ -106,7 +107,7 @@ public final class PreviewActor {
 			current = focus.clone();
 			state = PreviewActorState.FOCUSED;
 			npc.teleport(toPacketLocation(current));
-			npc.rotateHead(toPacketLocation(current));
+			rotateHead(current);
 		});
 	}
 
@@ -118,6 +119,7 @@ public final class PreviewActor {
 			current = stage.clone();
 			state = PreviewActorState.STAGED;
 			npc.teleport(toPacketLocation(current));
+			rotateHead(current);
 		});
 	}
 
@@ -258,6 +260,7 @@ public final class PreviewActor {
 			npc.sendPacketToViewersIfSpawned(new WrapperPlayServerEntityRelativeMoveAndRotation(
 				npc.getEntityId(), deltaX, deltaY, deltaZ, next.getYaw(), next.getPitch(), true
 			));
+			rotateHead(next);
 			return;
 		}
 		npc.sendPacketToViewersIfSpawned(new WrapperPlayServerEntityRelativeMove(
@@ -275,6 +278,10 @@ public final class PreviewActor {
 		next.setYaw(lerpYaw(start.getYaw(), target.getYaw(), rotation));
 		next.setPitch((float) lerp(start.getPitch(), target.getPitch(), rotation));
 		return next;
+	}
+
+	private void rotateHead(Location location) {
+		npc.rotateHead(toPacketLocation(location));
 	}
 
 	private void cancelTask() {
