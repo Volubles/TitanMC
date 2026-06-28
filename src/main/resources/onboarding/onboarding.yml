@@ -18,8 +18,6 @@ readiness:
   resource-pack:
     enabled: true
     require-nexo: true
-    send-with-nexo: true
-    send-delay-ticks: 20
     timeout-ticks: 600
   warmup:
     enabled: true

@@ -35,10 +35,8 @@ import com.voluble.titanMC.onboarding.persistence.OnboardingStorage;
 import com.voluble.titanMC.onboarding.preview.EntityLibOutfitPreview;
 import com.voluble.titanMC.onboarding.preview.OutfitPreview;
 import com.voluble.titanMC.onboarding.preview.UnavailableOutfitPreview;
-import com.voluble.titanMC.onboarding.readiness.NexoOnboardingResourcePackDispatcher;
 import com.voluble.titanMC.onboarding.readiness.OnboardingOutfitWarmup;
 import com.voluble.titanMC.onboarding.readiness.OnboardingReadinessService;
-import com.voluble.titanMC.onboarding.readiness.OnboardingResourcePackDispatcher;
 import com.voluble.titanMC.onboarding.readiness.OnboardingResourcePackGate;
 import com.voluble.titanMC.onboarding.readiness.OnboardingWaitingRoom;
 import com.voluble.titanMC.donatortools.DonatorToolsService;
@@ -538,17 +536,10 @@ public final class TitanMC extends JavaPlugin {
 	private OnboardingReadinessService onboardingReadiness() {
 		return new OnboardingReadinessService(
 			new OnboardingWaitingRoom(),
-			new OnboardingResourcePackGate(this, onboardingResourcePackDispatcher()),
+			new OnboardingResourcePackGate(this),
 			new OnboardingOutfitWarmup(this, outfitService),
 			getLogger()
 		);
-	}
-
-	private OnboardingResourcePackDispatcher onboardingResourcePackDispatcher() {
-		if (!getServer().getPluginManager().isPluginEnabled("Nexo")) {
-			return OnboardingResourcePackDispatcher.unavailable();
-		}
-		return new NexoOnboardingResourcePackDispatcher();
 	}
 
 	private OutfitPreview outfitPreview() {

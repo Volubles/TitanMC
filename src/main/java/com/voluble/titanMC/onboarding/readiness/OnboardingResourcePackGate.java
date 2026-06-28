@@ -18,13 +18,11 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public final class OnboardingResourcePackGate implements Listener, AutoCloseable {
 	private final Plugin plugin;
-	private final OnboardingResourcePackDispatcher dispatcher;
 	private final Map<UUID, PendingPack> pending = new ConcurrentHashMap<>();
 	private final Map<UUID, OnboardingReadinessResult> latestTerminalStatus = new ConcurrentHashMap<>();
 
-	public OnboardingResourcePackGate(Plugin plugin, OnboardingResourcePackDispatcher dispatcher) {
+	public OnboardingResourcePackGate(Plugin plugin) {
 		this.plugin = Objects.requireNonNull(plugin, "plugin");
-		this.dispatcher = Objects.requireNonNull(dispatcher, "dispatcher");
 	}
 
 	public CompletableFuture<OnboardingReadinessResult> await(Player player, OnboardingResourcePackConfiguration configuration) {
@@ -32,12 +30,11 @@ public final class OnboardingResourcePackGate implements Listener, AutoCloseable
 		if (configuration.requireNexo() && !Bukkit.getPluginManager().isPluginEnabled("Nexo")) {
 			return CompletableFuture.completedFuture(OnboardingReadinessResult.RESOURCE_PACK_UNAVAILABLE);
 		}
-		if (configuration.sendWithNexo() && !dispatcher.available()) {
-			return CompletableFuture.completedFuture(OnboardingReadinessResult.RESOURCE_PACK_UNAVAILABLE);
-		}
 		UUID playerId = player.getUniqueId();
 		OnboardingReadinessResult latest = latestTerminalStatus.get(playerId);
 		if (latest != null) return CompletableFuture.completedFuture(latest);
+		OnboardingReadinessResult current = terminalResult(player.getResourcePackStatus());
+		if (current != null) return CompletableFuture.completedFuture(current);
 		CompletableFuture<OnboardingReadinessResult> future = new CompletableFuture<>();
 		PendingPack previous = pending.remove(playerId);
 		if (previous != null) previous.complete(OnboardingReadinessResult.RESOURCE_PACK_FAILED);
@@ -45,24 +42,7 @@ public final class OnboardingResourcePackGate implements Listener, AutoCloseable
 			complete(playerId, OnboardingReadinessResult.RESOURCE_PACK_TIMEOUT), configuration.timeoutTicks()
 		);
 		pending.put(playerId, new PendingPack(future, timeout));
-		if (configuration.sendWithNexo()) {
-			Bukkit.getScheduler().runTaskLater(plugin, () -> dispatch(playerId), configuration.sendDelayTicks());
-		}
 		return future;
-	}
-
-	private void dispatch(UUID playerId) {
-		if (!pending.containsKey(playerId)) return;
-		Player player = Bukkit.getPlayer(playerId);
-		if (player == null) {
-			complete(playerId, OnboardingReadinessResult.RESOURCE_PACK_FAILED);
-			return;
-		}
-		try {
-			dispatcher.dispatch(player);
-		} catch (RuntimeException exception) {
-			complete(playerId, OnboardingReadinessResult.RESOURCE_PACK_FAILED);
-		}
 	}
 
 	@EventHandler
@@ -76,6 +56,16 @@ public final class OnboardingResourcePackGate implements Listener, AutoCloseable
 			);
 			case ACCEPTED, DOWNLOADED -> latestTerminalStatus.remove(playerId);
 		}
+	}
+
+	private OnboardingReadinessResult terminalResult(PlayerResourcePackStatusEvent.Status status) {
+		if (status == null) return null;
+		return switch (status) {
+			case SUCCESSFULLY_LOADED -> OnboardingReadinessResult.READY;
+			case DECLINED -> OnboardingReadinessResult.RESOURCE_PACK_DECLINED;
+			case FAILED_DOWNLOAD, INVALID_URL, FAILED_RELOAD, DISCARDED -> OnboardingReadinessResult.RESOURCE_PACK_FAILED;
+			case ACCEPTED, DOWNLOADED -> null;
+		};
 	}
 
 	@EventHandler

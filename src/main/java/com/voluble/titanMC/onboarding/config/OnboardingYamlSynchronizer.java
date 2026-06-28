@@ -17,8 +17,6 @@ final class OnboardingYamlSynchronizer {
 		changed |= setMissing(yaml, "readiness.waiting-room.enabled", false);
 		changed |= setMissing(yaml, "readiness.resource-pack.enabled", true);
 		changed |= setMissing(yaml, "readiness.resource-pack.require-nexo", true);
-		changed |= setMissing(yaml, "readiness.resource-pack.send-with-nexo", true);
-		changed |= setMissing(yaml, "readiness.resource-pack.send-delay-ticks", 20);
 		changed |= setMissing(yaml, "readiness.resource-pack.timeout-ticks", 600);
 		changed |= setMissing(yaml, "readiness.warmup.enabled", true);
 		changed |= setMissing(yaml, "readiness.warmup.timeout-ticks", 1200);

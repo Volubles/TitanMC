@@ -127,8 +127,6 @@ class OnboardingConfigurationTest {
 			  resource-pack:
 			    enabled:
 			    require-nexo:
-			    send-with-nexo:
-			    send-delay-ticks:
 			    timeout-ticks:
 			  warmup:
 			    enabled:
@@ -242,8 +240,6 @@ class OnboardingConfigurationTest {
 			  resource-pack:
 			    enabled: true
 			    require-nexo: true
-			    send-with-nexo: true
-			    send-delay-ticks: 20
 			    timeout-ticks: 600
 			  warmup:
 			    enabled: true
