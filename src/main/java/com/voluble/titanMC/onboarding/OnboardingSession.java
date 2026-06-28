@@ -98,11 +98,11 @@ public final class OnboardingSession {
 		if (input.isRight() && !input.isLeft()) {
 			if (previewTransitioning) return;
 			lastInputMillis = now;
-			nextOutfit();
+			nextOutfit(1);
 		} else if (input.isLeft() && !input.isRight()) {
 			if (previewTransitioning) return;
 			lastInputMillis = now;
-			previousOutfit();
+			previousOutfit(-1);
 		} else if (input.isJump()) {
 			lastInputMillis = now;
 			confirm();
@@ -120,26 +120,26 @@ public final class OnboardingSession {
 		completion.accept(player.getUniqueId());
 	}
 
-	private void nextOutfit() {
+	private void nextOutfit(int direction) {
 		if (configuration.outfits().size() <= 1) return;
 		outfitIndex = (outfitIndex + 1) % configuration.outfits().size();
-		showSelectedOutfit();
+		showSelectedOutfit(direction);
 	}
 
 	private void beginSelection() {
 		if (stopping || !player.isOnline()) return;
 		interactive = true;
 		messages.send(player, MessageDefaults.ONBOARDING_STARTED);
-		showSelectedOutfit();
+		showSelectedOutfit(0);
 	}
 
-	private void previousOutfit() {
+	private void previousOutfit(int direction) {
 		if (configuration.outfits().size() <= 1) return;
 		outfitIndex = (outfitIndex - 1 + configuration.outfits().size()) % configuration.outfits().size();
-		showSelectedOutfit();
+		showSelectedOutfit(direction);
 	}
 
-	private void showSelectedOutfit() {
+	private void showSelectedOutfit(int direction) {
 		OutfitId outfit = selectedOutfit();
 		String name = outfitName(outfit);
 		messages.send(player, MessageDefaults.ONBOARDING_OUTFIT_SELECTED, args -> args.plain("outfit", name));
@@ -150,7 +150,7 @@ public final class OnboardingSession {
 		int generation = ++previewGeneration;
 		if (configuration.previewMode() == OnboardingPreviewMode.CAROUSEL) {
 			previewTransitioning = true;
-			showCarouselPreview(generation);
+			showCarouselPreview(generation, direction);
 		} else {
 			preparePreviewModel(generation, outfitIndex, model -> {
 				if (model != null) showPreview(generation, model);
@@ -158,7 +158,7 @@ public final class OnboardingSession {
 		}
 	}
 
-	private void showCarouselPreview(int generation) {
+	private void showCarouselPreview(int generation, int direction) {
 		int size = configuration.outfits().size();
 		int previous = Math.floorMod(outfitIndex - 1, size);
 		int focus = outfitIndex;
@@ -180,7 +180,8 @@ public final class OnboardingSession {
 				focusModel,
 				nextModel,
 				outfitIndex,
-				size
+				size,
+				direction
 			));
 		});
 	}
@@ -243,7 +244,8 @@ public final class OnboardingSession {
 			model,
 			model,
 			0,
-			1
+			1,
+			0
 		));
 	}
 

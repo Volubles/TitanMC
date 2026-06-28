@@ -34,7 +34,8 @@ public interface OutfitPreview {
 		PreviewModel focus,
 		PreviewModel next,
 		int selectedIndex,
-		int selectionSize
+		int selectionSize,
+		int rotationDirection
 	) {
 		public PreviewScene {
 			Objects.requireNonNull(mode, "mode");
@@ -44,6 +45,7 @@ public interface OutfitPreview {
 			Objects.requireNonNull(next, "next");
 			if (selectionSize <= 0) throw new IllegalArgumentException("selection size must be positive");
 			if (selectedIndex < 0 || selectedIndex >= selectionSize) throw new IllegalArgumentException("selected index out of bounds");
+			rotationDirection = Integer.compare(rotationDirection, 0);
 		}
 	}
 }

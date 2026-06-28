@@ -32,7 +32,8 @@ public final class PreviewActorController {
 			model,
 			model,
 			0,
-			1
+			1,
+			0
 		);
 		return show(scene);
 	}

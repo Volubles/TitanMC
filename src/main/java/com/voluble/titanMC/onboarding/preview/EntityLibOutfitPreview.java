@@ -42,7 +42,8 @@ public final class EntityLibOutfitPreview implements OutfitPreview {
 			model,
 			model,
 			0,
-			1
+			1,
+			0
 		));
 	}
 

@@ -22,7 +22,9 @@ final class CarouselPreviewStrategy implements PreviewStrategy {
 	@Override
 	public CompletableFuture<Void> show(OutfitPreview.PreviewScene scene) {
 		if (wheel == null || focusIndex == null) return initialize(scene);
-		int direction = direction(focusIndex, scene.selectedIndex(), scene.selectionSize());
+		int direction = scene.rotationDirection() != 0
+			? scene.rotationDirection()
+			: direction(focusIndex, scene.selectedIndex(), scene.selectionSize());
 		focusIndex = scene.selectedIndex();
 		if (direction >= 0) return rotateForward(scene);
 		return rotateBackward(scene);
