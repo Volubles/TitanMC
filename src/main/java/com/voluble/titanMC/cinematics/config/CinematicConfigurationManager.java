@@ -6,6 +6,7 @@ import com.voluble.titanMC.cinematics.model.CinematicEvent;
 import com.voluble.titanMC.cinematics.model.CinematicEventPosition;
 import com.voluble.titanMC.cinematics.model.CinematicId;
 import com.voluble.titanMC.cinematics.model.CommandCinematicEvent;
+import com.voluble.titanMC.cinematics.model.HeadCinematicEvent;
 import com.voluble.titanMC.cinematics.model.ParticleCinematicEvent;
 import com.voluble.titanMC.cinematics.model.ScreenCinematicEvent;
 import com.voluble.titanMC.cinematics.model.SoundCinematicEvent;
@@ -240,6 +241,7 @@ public final class CinematicConfigurationManager implements ConfigManager.Compon
 				raw.put("command", command.command());
 				raw.put("console", command.console());
 			}
+			case HeadCinematicEvent head -> raw.put("material", head.material());
 			case ParticleCinematicEvent particle -> {
 				writePosition(raw, particle.position());
 				raw.put("particle", particle.particle());

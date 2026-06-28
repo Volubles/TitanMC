@@ -2,11 +2,13 @@ package com.voluble.titanMC.cinematics.runtime;
 
 import com.voluble.titanMC.cinematics.model.CinematicEvent;
 import com.voluble.titanMC.cinematics.model.CommandCinematicEvent;
+import com.voluble.titanMC.cinematics.model.HeadCinematicEvent;
 import com.voluble.titanMC.cinematics.model.ParticleCinematicEvent;
 import com.voluble.titanMC.cinematics.model.ScreenCinematicEvent;
 import com.voluble.titanMC.cinematics.model.SoundCinematicEvent;
 import com.voluble.titanMC.display.screen.ScreenEffectRequest;
 import org.bukkit.Bukkit;
+import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.SoundCategory;
 import org.bukkit.command.CommandSender;
@@ -29,6 +31,7 @@ final class CinematicEventExecutor {
 		try {
 			switch (event) {
 				case CommandCinematicEvent command -> command(player, command);
+				case HeadCinematicEvent head -> head(player, head);
 				case ParticleCinematicEvent particle -> particle(player, particle);
 				case ScreenCinematicEvent screen -> screen(player, screen);
 				case SoundCinematicEvent sound -> sound(player, sound);
@@ -43,6 +46,12 @@ final class CinematicEventExecutor {
 		if (command.startsWith("/")) command = command.substring(1);
 		CommandSender sender = event.console() ? Bukkit.getConsoleSender() : player;
 		Bukkit.dispatchCommand(sender, command);
+	}
+
+	private void head(Player player, HeadCinematicEvent event) {
+		Material material = Material.matchMaterial(event.material());
+		if (material == null) throw new IllegalArgumentException("Unknown material: " + event.material());
+		player.getInventory().setHelmet(material.isAir() ? null : new org.bukkit.inventory.ItemStack(material));
 	}
 
 	private void particle(Player player, ParticleCinematicEvent event) {

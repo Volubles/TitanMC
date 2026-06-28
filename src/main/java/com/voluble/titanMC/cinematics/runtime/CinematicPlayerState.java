@@ -3,6 +3,7 @@ package com.voluble.titanMC.cinematics.runtime;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 
 import java.util.Objects;
 
@@ -11,7 +12,8 @@ public record CinematicPlayerState(
 	GameMode gameMode,
 	boolean allowFlight,
 	boolean flying,
-	boolean invulnerable
+	boolean invulnerable,
+	ItemStack helmet
 ) {
 	public static CinematicPlayerState capture(Player player) {
 		Objects.requireNonNull(player, "player");
@@ -20,7 +22,8 @@ public record CinematicPlayerState(
 			player.getGameMode(),
 			player.getAllowFlight(),
 			player.isFlying(),
-			player.isInvulnerable()
+			player.isInvulnerable(),
+			clone(player.getInventory().getHelmet())
 		);
 	}
 
@@ -31,5 +34,10 @@ public record CinematicPlayerState(
 		player.setAllowFlight(allowFlight);
 		player.setFlying(flying);
 		player.setInvulnerable(invulnerable);
+		player.getInventory().setHelmet(clone(helmet));
+	}
+
+	private static ItemStack clone(ItemStack item) {
+		return item == null ? null : item.clone();
 	}
 }

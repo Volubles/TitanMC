@@ -3,6 +3,7 @@ package com.voluble.titanMC.cinematics.editor;
 import com.voluble.titanMC.cinematics.model.CameraPoint;
 import com.voluble.titanMC.cinematics.model.CinematicEventPosition;
 import com.voluble.titanMC.cinematics.model.CommandCinematicEvent;
+import com.voluble.titanMC.cinematics.model.HeadCinematicEvent;
 import com.voluble.titanMC.cinematics.model.ParticleCinematicEvent;
 import com.voluble.titanMC.cinematics.model.ScreenCinematicEvent;
 import com.voluble.titanMC.cinematics.model.SoundCinematicEvent;
@@ -52,8 +53,9 @@ final class AddNodeMenu {
 					));
 				} else {
 					context.setItem(10, sound(player, timelineSlot, row));
-					context.setItem(12, command(player, timelineSlot, row));
+					context.setItem(11, command(player, timelineSlot, row));
 					context.setItem(14, screen(player, timelineSlot, row));
+					context.setItem(15, head(player, timelineSlot, row));
 					context.setItem(16, particle(player, timelineSlot, row));
 				}
 				context.setItem(22, CinematicEditorChrome.button(
@@ -129,6 +131,25 @@ final class AddNodeMenu {
 					0.0,
 					0.0,
 					0.0
+				);
+				editor.addEvent(player, event);
+				context.actions().transition(() -> editor.openEventOptions(player, event));
+			}
+		);
+	}
+
+	private io.voluble.michellelib.menu.item.MenuItem head(Player player, int timelineSlot, int row) {
+		return CinematicEditorChrome.button(
+			items,
+			Material.CARVED_PUMPKIN,
+			"<#f28c28><bold>Add Head Item",
+			addLore(player, timelineSlot, "Places an item on the player's head."),
+			context -> {
+				HeadCinematicEvent event = new HeadCinematicEvent(
+					editor.defaultTickForSlot(player, timelineSlot),
+					timelineSlot,
+					row,
+					"carved_pumpkin"
 				);
 				editor.addEvent(player, event);
 				context.actions().transition(() -> editor.openEventOptions(player, event));

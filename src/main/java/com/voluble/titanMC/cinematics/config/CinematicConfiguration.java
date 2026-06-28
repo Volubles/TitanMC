@@ -9,6 +9,7 @@ import com.voluble.titanMC.cinematics.model.CinematicDefinition;
 import com.voluble.titanMC.cinematics.model.CinematicId;
 import com.voluble.titanMC.cinematics.model.CinematicTimeline;
 import com.voluble.titanMC.cinematics.model.CommandCinematicEvent;
+import com.voluble.titanMC.cinematics.model.HeadCinematicEvent;
 import com.voluble.titanMC.cinematics.model.ParticleCinematicEvent;
 import com.voluble.titanMC.cinematics.model.ScreenCinematicEvent;
 import com.voluble.titanMC.cinematics.model.SoundCinematicEvent;
@@ -89,6 +90,12 @@ public record CinematicConfiguration(
 				row,
 				text(raw, "command"),
 				bool(raw, "console", true)
+			);
+			case HEAD -> new HeadCinematicEvent(
+				tick,
+				slot,
+				row,
+				text(raw, "material")
 			);
 			case PARTICLE -> new ParticleCinematicEvent(
 				tick,

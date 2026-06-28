@@ -8,6 +8,7 @@ import com.voluble.titanMC.cinematics.model.CinematicEvent;
 import com.voluble.titanMC.cinematics.model.CinematicId;
 import com.voluble.titanMC.cinematics.model.CinematicTimeline;
 import com.voluble.titanMC.cinematics.model.CommandCinematicEvent;
+import com.voluble.titanMC.cinematics.model.HeadCinematicEvent;
 import com.voluble.titanMC.cinematics.model.ParticleCinematicEvent;
 import com.voluble.titanMC.cinematics.model.ScreenCinematicEvent;
 import com.voluble.titanMC.cinematics.model.SoundCinematicEvent;
@@ -41,6 +42,7 @@ public final class CinematicEditorService {
 	private final SoundEventOptionsMenu soundOptions;
 	private final ParticleEventOptionsMenu particleOptions;
 	private final ScreenEventOptionsMenu screenOptions;
+	private final HeadEventOptionsMenu headOptions;
 
 	public CinematicEditorService(
 		Plugin plugin,
@@ -63,6 +65,7 @@ public final class CinematicEditorService {
 		soundOptions = new SoundEventOptionsMenu(menus, this, items);
 		particleOptions = new ParticleEventOptionsMenu(menus, this, items);
 		screenOptions = new ScreenEventOptionsMenu(menus, this, items);
+		headOptions = new HeadEventOptionsMenu(menus, this, items);
 	}
 
 	public CinematicEditorInputService input() {
@@ -92,6 +95,7 @@ public final class CinematicEditorService {
 	void openEventOptions(Player player, CinematicEvent event) {
 		switch (event) {
 			case com.voluble.titanMC.cinematics.model.CommandCinematicEvent command -> commandOptions.open(player, command);
+			case com.voluble.titanMC.cinematics.model.HeadCinematicEvent head -> headOptions.open(player, head);
 			case com.voluble.titanMC.cinematics.model.ParticleCinematicEvent particle -> particleOptions.open(player, particle);
 			case com.voluble.titanMC.cinematics.model.ScreenCinematicEvent screen -> screenOptions.open(player, screen);
 			case com.voluble.titanMC.cinematics.model.SoundCinematicEvent sound -> soundOptions.open(player, sound);
@@ -296,6 +300,7 @@ public final class CinematicEditorService {
 	private CinematicEvent withTick(CinematicEvent event, int tick) {
 		return switch (event) {
 			case CommandCinematicEvent command -> new CommandCinematicEvent(tick, command.timelineSlot(), command.row(), command.command(), command.console());
+			case HeadCinematicEvent head -> new HeadCinematicEvent(tick, head.timelineSlot(), head.row(), head.material());
 			case ParticleCinematicEvent particle -> new ParticleCinematicEvent(
 				tick,
 				particle.timelineSlot(),
@@ -332,6 +337,7 @@ public final class CinematicEditorService {
 	private CinematicEvent withTimelineSlot(CinematicEvent event, int timelineSlot) {
 		return switch (event) {
 			case CommandCinematicEvent command -> new CommandCinematicEvent(command.tick(), timelineSlot, command.row(), command.command(), command.console());
+			case HeadCinematicEvent head -> new HeadCinematicEvent(head.tick(), timelineSlot, head.row(), head.material());
 			case ParticleCinematicEvent particle -> new ParticleCinematicEvent(
 				particle.tick(),
 				timelineSlot,

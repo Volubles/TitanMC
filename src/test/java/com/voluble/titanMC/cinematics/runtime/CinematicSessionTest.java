@@ -5,8 +5,11 @@ import com.voluble.titanMC.cinematics.model.CameraPoint;
 import com.voluble.titanMC.cinematics.model.CinematicDefinition;
 import com.voluble.titanMC.cinematics.model.CinematicId;
 import com.voluble.titanMC.cinematics.model.CinematicTimeline;
+import com.voluble.titanMC.cinematics.model.HeadCinematicEvent;
+import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -90,6 +93,21 @@ class CinematicSessionTest {
 		assertEquals(10.0, player.getLocation().getX(), 0.001);
 	}
 
+	@Test
+	void restoresOriginalHelmetAfterHeadEvent() {
+		player.getInventory().setHelmet(new ItemStack(Material.DIAMOND_HELMET));
+		CinematicSession session = new CinematicSession(plugin, player, headDefinition(), ignored -> { }, screenEffects);
+
+		session.start();
+		server.getScheduler().performTicks(1L);
+
+		assertEquals(Material.CARVED_PUMPKIN, player.getInventory().getHelmet().getType());
+
+		session.stop(true);
+
+		assertEquals(Material.DIAMOND_HELMET, player.getInventory().getHelmet().getType());
+	}
+
 	private CinematicDefinition definition() {
 		return new CinematicDefinition(
 			CinematicId.of("test"),
@@ -111,6 +129,18 @@ class CinematicSessionTest {
 				point(4, 1, 10.0)
 			)),
 			new CinematicTimeline(List.of())
+		);
+	}
+
+	private CinematicDefinition headDefinition() {
+		return new CinematicDefinition(
+			CinematicId.of("head"),
+			20,
+			new CameraPathDefinition(true, List.of(
+				point(0, 0, 0.0),
+				point(20, 1, 10.0)
+			)),
+			new CinematicTimeline(List.of(new HeadCinematicEvent(0, 0, 1, "carved_pumpkin")))
 		);
 	}
 

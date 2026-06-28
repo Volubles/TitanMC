@@ -4,6 +4,7 @@ import com.voluble.titanMC.cinematics.model.CameraPoint;
 import com.voluble.titanMC.cinematics.model.CinematicDefinition;
 import com.voluble.titanMC.cinematics.model.CinematicEvent;
 import com.voluble.titanMC.cinematics.model.CommandCinematicEvent;
+import com.voluble.titanMC.cinematics.model.HeadCinematicEvent;
 import com.voluble.titanMC.cinematics.model.ParticleCinematicEvent;
 import com.voluble.titanMC.cinematics.model.ScreenCinematicEvent;
 import com.voluble.titanMC.cinematics.model.SoundCinematicEvent;
@@ -83,6 +84,7 @@ final class CinematicEditorItemFactory {
 				lore.add("<gray>Run as: <white>" + (command.console() ? "Console" : "Player"));
 				lore.add("<gray>Command: <white>" + command.command());
 			}
+			case HeadCinematicEvent head -> lore.add("<gray>Material: <white>" + head.material());
 			case ParticleCinematicEvent particle -> {
 				lore.add("<gray>Particle: <white>" + particle.particle());
 				lore.add("<gray>Count: <white>" + particle.count());
@@ -148,6 +150,7 @@ final class CinematicEditorItemFactory {
 	private Material material(CinematicEvent event) {
 		return switch (event.type()) {
 			case COMMAND -> Material.COMMAND_BLOCK;
+			case HEAD -> Material.CARVED_PUMPKIN;
 			case PARTICLE -> Material.BLAZE_POWDER;
 			case SCREEN -> Material.BLACK_DYE;
 			case SOUND -> Material.NOTE_BLOCK;
@@ -157,6 +160,7 @@ final class CinematicEditorItemFactory {
 	private String name(CinematicEvent event) {
 		return switch (event.type()) {
 			case COMMAND -> "<#f7d774><bold>Command Event";
+			case HEAD -> "<#f28c28><bold>Head Event";
 			case PARTICLE -> "<#b36bff><bold>Particle Event";
 			case SCREEN -> "<#d43030><bold>Screen Event";
 			case SOUND -> "<#42d829><bold>Sound Event";
