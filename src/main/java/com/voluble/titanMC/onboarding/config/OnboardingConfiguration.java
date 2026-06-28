@@ -87,6 +87,7 @@ public record OnboardingConfiguration(
 	private static boolean requiredBoolean(ConfigurationSection section, String path) {
 		if (section == null) throw new IllegalArgumentException("Missing onboarding config section for " + path);
 		if (!section.contains(lastPathPart(path))) throw new IllegalArgumentException("Missing onboarding config value: " + path);
+		if (!section.isBoolean(lastPathPart(path))) throw new IllegalArgumentException("Onboarding config value must be boolean: " + path);
 		return section.getBoolean(lastPathPart(path));
 	}
 
@@ -100,18 +101,25 @@ public record OnboardingConfiguration(
 	private static long requiredLong(ConfigurationSection section, String path) {
 		if (section == null) throw new IllegalArgumentException("Missing onboarding config section for " + path);
 		if (!section.contains(lastPathPart(path))) throw new IllegalArgumentException("Missing onboarding config value: " + path);
+		if (!section.isLong(lastPathPart(path)) && !section.isInt(lastPathPart(path))) {
+			throw new IllegalArgumentException("Onboarding config value must be a whole number: " + path);
+		}
 		return section.getLong(lastPathPart(path));
 	}
 
 	private static double requiredDouble(ConfigurationSection section, String path) {
 		if (section == null) throw new IllegalArgumentException("Missing onboarding config section for " + path);
 		if (!section.contains(lastPathPart(path))) throw new IllegalArgumentException("Missing onboarding config value: " + path);
+		if (!section.isDouble(lastPathPart(path)) && !section.isLong(lastPathPart(path)) && !section.isInt(lastPathPart(path))) {
+			throw new IllegalArgumentException("Onboarding config value must be numeric: " + path);
+		}
 		return section.getDouble(lastPathPart(path));
 	}
 
 	private static String requiredString(ConfigurationSection section, String path) {
 		if (section == null) throw new IllegalArgumentException("Missing onboarding config section for " + path);
 		if (!section.contains(lastPathPart(path))) throw new IllegalArgumentException("Missing onboarding config value: " + path);
+		if (!section.isString(lastPathPart(path))) throw new IllegalArgumentException("Onboarding config value must be text: " + path);
 		String value = section.getString(lastPathPart(path));
 		if (value == null || value.isBlank()) throw new IllegalArgumentException("Missing onboarding config value: " + path);
 		return value;
@@ -120,6 +128,7 @@ public record OnboardingConfiguration(
 	private static List<String> requiredStringList(ConfigurationSection section, String path) {
 		if (section == null) throw new IllegalArgumentException("Missing onboarding config section for " + path);
 		if (!section.contains(lastPathPart(path))) throw new IllegalArgumentException("Missing onboarding config value: " + path);
+		if (!section.isList(lastPathPart(path))) throw new IllegalArgumentException("Onboarding config value must be a list: " + path);
 		return section.getStringList(lastPathPart(path));
 	}
 

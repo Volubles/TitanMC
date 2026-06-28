@@ -69,6 +69,43 @@ class OnboardingConfigurationTest {
 			""")));
 	}
 
+	@Test
+	void rejectsBlankTemplateValues() {
+		assertThrows(IllegalArgumentException.class, () -> OnboardingConfiguration.load(yaml("""
+			enabled:
+			first-join:
+			  enabled:
+			  delay-ticks:
+			cinematic:
+			preview:
+			  mode:
+			input:
+			  repeat-cooldown-ms:
+			outfits:
+			""")));
+	}
+
+	@Test
+	void rejectsNonNumericLocationValues() {
+		assertThrows(IllegalArgumentException.class, () -> OnboardingConfiguration.load(yaml("""
+			enabled: true
+			first-join:
+			  enabled: true
+			  delay-ticks: 40
+			cinematic: onboarding_intro
+			preview:
+			  mode: runway
+			  runway:
+			    entrance: { world: world, x: soon, y: 2, z: 3, yaw: 4, pitch: 5 }
+			    focus: { world: world, x: 6, y: 7, z: 8, yaw: 9, pitch: 10 }
+			    exit: { world: world, x: 11, y: 12, z: 13, yaw: 14, pitch: 15 }
+			input:
+			  repeat-cooldown-ms: 300
+			outfits:
+			  - prison
+			""")));
+	}
+
 	private static String carouselConfig() {
 		return """
 			enabled: true

@@ -1,92 +1,91 @@
-enabled: true
+enabled:
 
 first-join:
-  enabled: true
-  delay-ticks: 40
+  enabled:
+  delay-ticks:
 
-cinematic: "onboarding_intro"
+cinematic:
 
 preview:
-  mode: carousel
+  mode:
 
   runway:
     entrance:
-      world: world
-      x: -2.5
-      y: 79.0
-      z: -2.5
-      yaw: 90.0
-      pitch: 0.0
+      world:
+      x:
+      y:
+      z:
+      yaw:
+      pitch:
     focus:
-      world: world
-      x: 0.5
-      y: 79.0
-      z: -2.5
-      yaw: 0.0
-      pitch: 0.0
+      world:
+      x:
+      y:
+      z:
+      yaw:
+      pitch:
     exit:
-      world: world
-      x: 3.5
-      y: 79.0
-      z: -2.5
-      yaw: -90.0
-      pitch: 0.0
+      world:
+      x:
+      y:
+      z:
+      yaw:
+      pitch:
 
   carousel:
     focus:
-      world: world
-      x: 0.5
-      y: 79.0
-      z: -2.5
-      yaw: 0.0
-      pitch: 0.0
+      world:
+      x:
+      y:
+      z:
+      yaw:
+      pitch:
     left:
       entrance:
-        world: world
-        x: -4.5
-        y: 79.0
-        z: -2.5
-        yaw: 90.0
-        pitch: 0.0
+        world:
+        x:
+        y:
+        z:
+        yaw:
+        pitch:
       stage:
-        world: world
-        x: -2.5
-        y: 79.0
-        z: -2.5
-        yaw: 90.0
-        pitch: 0.0
+        world:
+        x:
+        y:
+        z:
+        yaw:
+        pitch:
       exit:
-        world: world
-        x: -5.5
-        y: 79.0
-        z: -2.5
-        yaw: -90.0
-        pitch: 0.0
+        world:
+        x:
+        y:
+        z:
+        yaw:
+        pitch:
     right:
       entrance:
-        world: world
-        x: 5.5
-        y: 79.0
-        z: -2.5
-        yaw: -90.0
-        pitch: 0.0
+        world:
+        x:
+        y:
+        z:
+        yaw:
+        pitch:
       stage:
-        world: world
-        x: 3.5
-        y: 79.0
-        z: -2.5
-        yaw: -90.0
-        pitch: 0.0
+        world:
+        x:
+        y:
+        z:
+        yaw:
+        pitch:
       exit:
-        world: world
-        x: 6.5
-        y: 79.0
-        z: -2.5
-        yaw: 90.0
-        pitch: 0.0
+        world:
+        x:
+        y:
+        z:
+        yaw:
+        pitch:
 
 input:
-  repeat-cooldown-ms: 300
+  repeat-cooldown-ms:
 
 outfits:
-  - prison
