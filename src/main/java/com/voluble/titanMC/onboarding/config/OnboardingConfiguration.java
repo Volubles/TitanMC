@@ -34,16 +34,16 @@ public record OnboardingConfiguration(
 	public static OnboardingConfiguration load(FileConfiguration yaml) {
 		ConfigurationSection firstJoin = yaml.getConfigurationSection("first-join");
 		ConfigurationSection input = yaml.getConfigurationSection("input");
-		OnboardingPreviewMode previewMode = OnboardingPreviewMode.parse(yaml.getString("preview-mode", "runway"));
+		OnboardingPreviewMode previewMode = OnboardingPreviewMode.parse(requiredString(yaml, "preview-mode"));
 		return new OnboardingConfiguration(
-			yaml.getBoolean("enabled", true),
-			firstJoin == null || firstJoin.getBoolean("enabled", true),
-			firstJoin == null ? 40L : firstJoin.getLong("delay-ticks", 40L),
-			CinematicId.of(yaml.getString("cinematic", "onboarding_intro")),
-			input == null ? 300L : input.getLong("repeat-cooldown-ms", 300L),
+			requiredBoolean(yaml, "enabled"),
+			requiredBoolean(firstJoin, "first-join.enabled"),
+			requiredLong(firstJoin, "first-join.delay-ticks"),
+			CinematicId.of(requiredString(yaml, "cinematic")),
+			requiredLong(input, "input.repeat-cooldown-ms"),
 			previewMode,
 			OnboardingPreviewStage.load(yaml, previewMode),
-			yaml.getStringList("outfits").stream().map(OutfitId::of).toList()
+			requiredStringList(yaml, "outfits").stream().map(OutfitId::of).toList()
 		);
 	}
 
@@ -55,12 +55,12 @@ public record OnboardingConfiguration(
 
 		public static LocationSpec load(ConfigurationSection section) {
 			return new LocationSpec(
-				section.getString("world", "world"),
-				section.getDouble("x"),
-				section.getDouble("y"),
-				section.getDouble("z"),
-				(float) section.getDouble("yaw"),
-				(float) section.getDouble("pitch")
+				requiredString(section, "world"),
+				requiredDouble(section, "x"),
+				requiredDouble(section, "y"),
+				requiredDouble(section, "z"),
+				(float) requiredDouble(section, "yaw"),
+				(float) requiredDouble(section, "pitch")
 			);
 		}
 
@@ -81,5 +81,42 @@ public record OnboardingConfiguration(
 			if (bukkitWorld == null) throw new IllegalStateException("Unknown onboarding world: " + world);
 			return new Location(bukkitWorld, x, y, z, yaw, pitch);
 		}
+	}
+
+	private static boolean requiredBoolean(ConfigurationSection section, String path) {
+		if (section == null) throw new IllegalArgumentException("Missing onboarding config section for " + path);
+		if (!section.contains(lastPathPart(path))) throw new IllegalArgumentException("Missing onboarding config value: " + path);
+		return section.getBoolean(lastPathPart(path));
+	}
+
+	private static long requiredLong(ConfigurationSection section, String path) {
+		if (section == null) throw new IllegalArgumentException("Missing onboarding config section for " + path);
+		if (!section.contains(lastPathPart(path))) throw new IllegalArgumentException("Missing onboarding config value: " + path);
+		return section.getLong(lastPathPart(path));
+	}
+
+	private static double requiredDouble(ConfigurationSection section, String path) {
+		if (section == null) throw new IllegalArgumentException("Missing onboarding config section for " + path);
+		if (!section.contains(lastPathPart(path))) throw new IllegalArgumentException("Missing onboarding config value: " + path);
+		return section.getDouble(lastPathPart(path));
+	}
+
+	private static String requiredString(ConfigurationSection section, String path) {
+		if (section == null) throw new IllegalArgumentException("Missing onboarding config section for " + path);
+		if (!section.contains(lastPathPart(path))) throw new IllegalArgumentException("Missing onboarding config value: " + path);
+		String value = section.getString(lastPathPart(path));
+		if (value == null || value.isBlank()) throw new IllegalArgumentException("Missing onboarding config value: " + path);
+		return value;
+	}
+
+	private static List<String> requiredStringList(ConfigurationSection section, String path) {
+		if (section == null) throw new IllegalArgumentException("Missing onboarding config section for " + path);
+		if (!section.contains(lastPathPart(path))) throw new IllegalArgumentException("Missing onboarding config value: " + path);
+		return section.getStringList(lastPathPart(path));
+	}
+
+	private static String lastPathPart(String path) {
+		int separator = path.lastIndexOf('.');
+		return separator < 0 ? path : path.substring(separator + 1);
 	}
 }

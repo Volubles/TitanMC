@@ -29,8 +29,13 @@ class OnboardingConfigurationTest {
 	void carouselRequiresCompleteCarouselStage() {
 		assertThrows(IllegalArgumentException.class, () -> OnboardingConfiguration.load(yaml("""
 			enabled: true
+			first-join:
+			  enabled: true
+			  delay-ticks: 40
 			cinematic: onboarding_intro
 			preview-mode: carousel
+			input:
+			  repeat-cooldown-ms: 300
 			preview-stage:
 			  focus: { world: world, x: 6, y: 7, z: 8, yaw: 9, pitch: 10 }
 			outfits:
@@ -45,11 +50,33 @@ class OnboardingConfigurationTest {
 		assertEquals(OnboardingPreviewMode.CAROUSEL, config.previewMode());
 	}
 
+	@Test
+	void requiresPreviewMode() {
+		assertThrows(IllegalArgumentException.class, () -> OnboardingConfiguration.load(yaml("""
+			enabled: true
+			first-join:
+			  enabled: true
+			  delay-ticks: 40
+			cinematic: onboarding_intro
+			input:
+			  repeat-cooldown-ms: 300
+			preview-stage:
+			  focus: { world: world, x: 6, y: 7, z: 8, yaw: 9, pitch: 10 }
+			outfits:
+			  - prison
+			""")));
+	}
+
 	private static String carouselConfig() {
 		return """
 			enabled: true
+			first-join:
+			  enabled: true
+			  delay-ticks: 40
 			cinematic: onboarding_intro
 			preview-mode: carousel
+			input:
+			  repeat-cooldown-ms: 300
 			preview-stage:
 			  focus: { world: world, x: 6, y: 7, z: 8, yaw: 9, pitch: 10 }
 			  left-entrance: { world: world, x: 16, y: 2, z: 3, yaw: 4, pitch: 5 }
@@ -66,8 +93,13 @@ class OnboardingConfigurationTest {
 	private static String runwayConfig() {
 		return """
 			enabled: true
+			first-join:
+			  enabled: true
+			  delay-ticks: 40
 			cinematic: onboarding_intro
 			preview-mode: runway
+			input:
+			  repeat-cooldown-ms: 300
 			preview-stage:
 			  runway-entrance: { world: world, x: 1, y: 2, z: 3, yaw: 4, pitch: 5 }
 			  focus: { world: world, x: 6, y: 7, z: 8, yaw: 9, pitch: 10 }
