@@ -86,6 +86,19 @@ public final class PreviewActor {
 		spawnAt(location);
 	}
 
+	public CompletableFuture<Void> stageAtLater(Location location, long delayTicks) {
+		CompletableFuture<Void> result = new CompletableFuture<>();
+		Bukkit.getScheduler().runTaskLater(plugin, () -> {
+			if (state == PreviewActorState.REMOVED) {
+				result.complete(null);
+				return;
+			}
+			stageAt(location);
+			result.complete(null);
+		}, Math.max(0L, delayTicks));
+		return result;
+	}
+
 	public CompletableFuture<Void> moveToFocus() {
 		state = PreviewActorState.ENTERING;
 		return moveTo(path.focus(), false).thenRun(() -> {

@@ -45,6 +45,7 @@ public final class OnboardingSession {
 	private long lastInputMillis;
 	private boolean stopping;
 	private boolean interactive;
+	private boolean previewTransitioning;
 	private int previewGeneration;
 
 	public OnboardingSession(
@@ -95,9 +96,11 @@ public final class OnboardingSession {
 		long now = System.currentTimeMillis();
 		if (now - lastInputMillis < configuration.inputCooldownMillis()) return;
 		if (input.isRight() && !input.isLeft()) {
+			if (previewTransitioning) return;
 			lastInputMillis = now;
 			nextOutfit();
 		} else if (input.isLeft() && !input.isRight()) {
+			if (previewTransitioning) return;
 			lastInputMillis = now;
 			previousOutfit();
 		} else if (input.isJump()) {
@@ -118,6 +121,7 @@ public final class OnboardingSession {
 	}
 
 	private void nextOutfit() {
+		if (configuration.outfits().size() <= 1) return;
 		outfitIndex = (outfitIndex + 1) % configuration.outfits().size();
 		showSelectedOutfit();
 	}
@@ -130,6 +134,7 @@ public final class OnboardingSession {
 	}
 
 	private void previousOutfit() {
+		if (configuration.outfits().size() <= 1) return;
 		outfitIndex = (outfitIndex - 1 + configuration.outfits().size()) % configuration.outfits().size();
 		showSelectedOutfit();
 	}
@@ -144,6 +149,7 @@ public final class OnboardingSession {
 		}
 		int generation = ++previewGeneration;
 		if (configuration.previewMode() == OnboardingPreviewMode.CAROUSEL) {
+			previewTransitioning = true;
 			showCarouselPreview(generation);
 		} else {
 			preparePreviewModel(generation, outfitIndex, model -> {
@@ -163,7 +169,10 @@ public final class OnboardingSession {
 			OutfitPreview.PreviewModel previousModel = prepared.get(previous);
 			OutfitPreview.PreviewModel focusModel = prepared.get(focus);
 			OutfitPreview.PreviewModel nextModel = prepared.get(next);
-			if (previousModel == null || focusModel == null || nextModel == null) return;
+			if (previousModel == null || focusModel == null || nextModel == null) {
+				finishPreviewTransition(generation);
+				return;
+			}
 			showPreview(generation, new OutfitPreview.PreviewScene(
 				configuration.previewMode(),
 				configuration.previewStage(),
@@ -194,7 +203,10 @@ public final class OnboardingSession {
 			return;
 		}
 		preparePreviewModel(generation, index, model -> {
-			if (model == null) return;
+			if (model == null) {
+				finishPreviewTransition(generation);
+				return;
+			}
 			models.put(index, model);
 			Bukkit.getScheduler().runTask(plugin, () ->
 				preparePreviewModels(generation, indices, position + 1, models, callback)
@@ -239,10 +251,15 @@ public final class OnboardingSession {
 		preview.show(player, scene)
 			.whenComplete((ignored, failure) -> {
 				if (stopping || generation != previewGeneration) return;
+				finishPreviewTransition(generation);
 				if (failure == null) return;
 				logger.log(Level.WARNING, "Failed to show onboarding preview for " + player.getUniqueId(), failure);
 				messages.send(player, MessageDefaults.ONBOARDING_PREVIEW_FAILED);
 			});
+	}
+
+	private void finishPreviewTransition(int generation) {
+		if (generation == previewGeneration) previewTransitioning = false;
 	}
 
 	private void confirm() {
