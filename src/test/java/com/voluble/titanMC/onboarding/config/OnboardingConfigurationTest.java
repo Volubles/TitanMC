@@ -4,6 +4,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class OnboardingConfigurationTest {
@@ -53,6 +54,38 @@ class OnboardingConfigurationTest {
 		OnboardingConfiguration config = OnboardingConfiguration.load(yaml(carouselConfig()));
 
 		assertEquals(OnboardingPreviewMode.CAROUSEL, config.previewMode());
+	}
+
+	@Test
+	void synchronizesMissingPresentationAsDisabled() {
+		YamlConfiguration yaml = yaml("""
+			enabled: true
+			first-join:
+			  enabled: true
+			  delay-ticks: 40
+			cinematic: onboarding_intro
+			preview:
+			  mode: carousel
+			  carousel:
+			    focus: { world: world, x: 6, y: 7, z: 8, yaw: 9, pitch: 10 }
+			    left:
+			      entrance: { world: world, x: 16, y: 2, z: 3, yaw: 4, pitch: 5 }
+			      stage: { world: world, x: 17, y: 2, z: 3, yaw: 4, pitch: 5 }
+			      exit: { world: world, x: 18, y: 2, z: 3, yaw: 4, pitch: 5 }
+			    right:
+			      entrance: { world: world, x: 19, y: 2, z: 3, yaw: 4, pitch: 5 }
+			      stage: { world: world, x: 20, y: 2, z: 3, yaw: 4, pitch: 5 }
+			      exit: { world: world, x: 21, y: 2, z: 3, yaw: 4, pitch: 5 }
+			input:
+			  repeat-cooldown-ms: 300
+			outfits:
+			  - prison
+			""");
+
+		OnboardingYamlSynchronizer.sync(yaml);
+		OnboardingConfiguration config = OnboardingConfiguration.load(yaml);
+
+		assertFalse(config.presentation().enabled());
 	}
 
 	@Test

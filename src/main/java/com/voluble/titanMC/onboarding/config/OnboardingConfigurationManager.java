@@ -40,7 +40,9 @@ public final class OnboardingConfigurationManager implements ConfigManager.Compo
 
 	@Override
 	public void reload() {
-		current.set(OnboardingConfiguration.load(YamlConfiguration.loadConfiguration(path.toFile())));
+		YamlConfiguration yaml = YamlConfiguration.loadConfiguration(path.toFile());
+		if (OnboardingYamlSynchronizer.sync(yaml)) save(yaml);
+		current.set(OnboardingConfiguration.load(yaml));
 	}
 
 	public OnboardingConfiguration current() {
