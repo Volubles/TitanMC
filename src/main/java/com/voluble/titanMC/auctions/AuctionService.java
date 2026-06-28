@@ -53,6 +53,8 @@ public final class AuctionService implements AuctionBlockAccess, AutoCloseable {
 	private final PluginMessageService messages;
 	private final Map<String, AuctionPosition> positions = new LinkedHashMap<>();
 	private final Map<Long, AuctionLot> auctions = new LinkedHashMap<>();
+	private final Map<BlockKey, AuctionLot> chestLots = new HashMap<>();
+	private final Map<BlockKey, AuctionLot> signLots = new HashMap<>();
 	private final Set<Long> purchasesInFlight = new HashSet<>();
 	private final Set<Long> maintenanceInFlight = new HashSet<>();
 	private final Set<String> assignmentPositionsInFlight = new HashSet<>();
@@ -91,6 +93,7 @@ public final class AuctionService implements AuctionBlockAccess, AutoCloseable {
 		for (AuctionLot lot : auctions.values()) {
 			if (lot.positionId() != null) render(lot);
 		}
+		rebuildPhysicalLotIndex();
 		task = Bukkit.getScheduler().runTaskTimer(plugin, this::tick, 20L, 20L);
 	}
 
@@ -147,17 +150,15 @@ public final class AuctionService implements AuctionBlockAccess, AutoCloseable {
 	}
 
 	public AuctionLot atChest(Block block) {
-		return auctions.values().stream().filter(lot -> {
-			AuctionPosition position = positions.get(lot.positionId());
-			return position != null && matches(block, position, false);
-		}).findFirst().orElse(null);
+		return chestLots.get(BlockKey.of(block));
 	}
 
 	public AuctionLot atSign(Block block) {
-		return auctions.values().stream().filter(lot -> {
-			AuctionPosition position = positions.get(lot.positionId());
-			return position != null && matches(block, position, true);
-		}).findFirst().orElse(null);
+		return signLots.get(BlockKey.of(block));
+	}
+
+	public boolean hasPhysicalLots() {
+		return !chestLots.isEmpty();
 	}
 
 	@Override
@@ -237,6 +238,7 @@ public final class AuctionService implements AuctionBlockAccess, AutoCloseable {
 		List<AuctionItem> remaining = lot.items().stream().filter(candidate -> candidate.id() != item.id()).toList();
 		AuctionLot updated = copyWithItems(lot, remaining);
 		auctions.put(updated.id(), updated);
+		rebuildPhysicalLotIndex();
 		deliveries.deliver(player, delivery);
 		if (remaining.isEmpty()) removeEmptyAuction(updated);
 	}
@@ -250,6 +252,7 @@ public final class AuctionService implements AuctionBlockAccess, AutoCloseable {
 				return;
 			}
 			auctions.remove(lot.id());
+			rebuildPhysicalLotIndex();
 			AuctionPosition position = positions.get(lot.positionId());
 			if (position != null) removeBlocks(position);
 		}));
@@ -334,6 +337,7 @@ public final class AuctionService implements AuctionBlockAccess, AutoCloseable {
 				return;
 			}
 			auctions.put(claimed.id(), claimed);
+			rebuildPhysicalLotIndex();
 			updateSign(claimed);
 			messages.send(player, MessageDefaults.AUCTIONS_PURCHASED, args -> args
 				.plain("duration", shortTime(configuration.current().claimDurationMillis())));
@@ -387,6 +391,7 @@ public final class AuctionService implements AuctionBlockAccess, AutoCloseable {
 			if (loaded != null) {
 				auctions.clear();
 				auctions.putAll(index(loaded));
+				rebuildPhysicalLotIndex();
 			}
 		}));
 	}
@@ -416,6 +421,7 @@ public final class AuctionService implements AuctionBlockAccess, AutoCloseable {
 				AuctionLot current = auctions.get(lot.id());
 				if (current == null || current.state() != AuctionState.QUEUED) return;
 				auctions.put(assigned.id(), assigned);
+				rebuildPhysicalLotIndex();
 				render(assigned);
 			}));
 		}
@@ -433,6 +439,7 @@ public final class AuctionService implements AuctionBlockAccess, AutoCloseable {
 			AuctionLot current = auctions.get(lot.id());
 			if (current == null || current.state() != AuctionState.CLAIMED) return;
 			auctions.put(publicLot.id(), publicLot);
+			rebuildPhysicalLotIndex();
 			updateSign(publicLot);
 		}));
 	}
@@ -512,8 +519,20 @@ public final class AuctionService implements AuctionBlockAccess, AutoCloseable {
 	private void delete(AuctionLot lot) throws SQLException {
 		storage.deleteAuction(lot.id());
 		auctions.remove(lot.id());
+		rebuildPhysicalLotIndex();
 		AuctionPosition position = positions.get(lot.positionId());
 		if (position != null) removeBlocks(position);
+	}
+
+	private void rebuildPhysicalLotIndex() {
+		chestLots.clear();
+		signLots.clear();
+		for (AuctionLot lot : auctions.values()) {
+			AuctionPosition position = positions.get(lot.positionId());
+			if (position == null) continue;
+			chestLots.put(BlockKey.chest(position), lot);
+			signLots.put(BlockKey.sign(position), lot);
+		}
 	}
 
 	private void removeBlocks(AuctionPosition position) {
@@ -539,15 +558,28 @@ public final class AuctionService implements AuctionBlockAccess, AutoCloseable {
 		return new AuctionLot(lot.id(), lot.sourceLotId(), lot.batchIndex(), lot.wardId(), lot.positionId(), lot.price(), lot.state(), lot.buyerId(), lot.buyerName(), lot.saleExpiresAt(), lot.claimExpiresAt(), items);
 	}
 
-	private static boolean matches(Block block, AuctionPosition position, boolean sign) {
-		Location location = new Location(Bukkit.getWorld(position.worldId()), position.x(), position.y(), position.z());
-		if (sign) location = location.getBlock().getRelative(position.facing()).getLocation();
-		return block.getWorld().getUID().equals(position.worldId())
-			&& block.getX() == location.getBlockX() && block.getY() == location.getBlockY() && block.getZ() == location.getBlockZ();
-	}
-
 	private static World world(AuctionPosition position) {
 		return position == null ? null : Bukkit.getWorld(position.worldId());
+	}
+
+	private record BlockKey(UUID worldId, int x, int y, int z) {
+		static BlockKey of(Block block) {
+			return new BlockKey(block.getWorld().getUID(), block.getX(), block.getY(), block.getZ());
+		}
+
+		static BlockKey chest(AuctionPosition position) {
+			return new BlockKey(position.worldId(), position.x(), position.y(), position.z());
+		}
+
+		static BlockKey sign(AuctionPosition position) {
+			BlockFace facing = position.facing();
+			return new BlockKey(
+				position.worldId(),
+				position.x() + facing.getModX(),
+				position.y() + facing.getModY(),
+				position.z() + facing.getModZ()
+			);
+		}
 	}
 
 	private static String normalize(String id) {

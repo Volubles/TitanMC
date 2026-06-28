@@ -133,8 +133,12 @@ public final class AuctionListener implements Listener {
 
 	@EventHandler(ignoreCancelled = true)
 	public void onMove(InventoryMoveItemEvent event) {
-		if (physicalLot(event.getSource()) != null || physicalLot(event.getDestination()) != null
-			|| auctions.hasDeliveryReceipt(event.getItem())) {
+		if (auctions.hasDeliveryReceipt(event.getItem())) {
+			event.setCancelled(true);
+			return;
+		}
+		if (!auctions.hasPhysicalLots()) return;
+		if (physicalLot(event.getSource()) != null || physicalLot(event.getDestination()) != null) {
 			event.setCancelled(true);
 		}
 	}
