@@ -44,7 +44,7 @@ class OnboardingConfigurationTest {
 			%s
 			outfits:
 			  - prison
-			""".formatted(presentationConfig());
+			""".formatted(readinessConfig(), presentationConfig());
 
 		assertThrows(IllegalArgumentException.class, () -> OnboardingConfiguration.load(yaml(source)));
 	}
@@ -85,6 +85,7 @@ class OnboardingConfigurationTest {
 		OnboardingYamlSynchronizer.sync(yaml);
 		OnboardingConfiguration config = OnboardingConfiguration.load(yaml);
 
+		assertTrue(config.readiness().resourcePack().enabled());
 		assertTrue(config.presentation().enabled());
 		assertEquals(2, config.presentation().steps().size());
 		assertTrue(config.presentation().previewSpawnSound().enabled());
@@ -97,6 +98,7 @@ class OnboardingConfigurationTest {
 			first-join:
 			  enabled: true
 			  delay-ticks: 40
+			%s
 			cinematic: onboarding_intro
 			input:
 			  repeat-cooldown-ms: 300
@@ -106,7 +108,7 @@ class OnboardingConfigurationTest {
 			    focus: { world: world, x: 6, y: 7, z: 8, yaw: 9, pitch: 10 }
 			outfits:
 			  - prison
-			""".formatted(presentationConfig());
+			""".formatted(readinessConfig(), presentationConfig());
 
 		assertThrows(IllegalArgumentException.class, () -> OnboardingConfiguration.load(yaml(source)));
 	}
@@ -118,6 +120,17 @@ class OnboardingConfigurationTest {
 			first-join:
 			  enabled:
 			  delay-ticks:
+			readiness:
+			  enabled:
+			  waiting-room:
+			    enabled:
+			  resource-pack:
+			    enabled:
+			    require-nexo:
+			    timeout-ticks:
+			  warmup:
+			    enabled:
+			    timeout-ticks:
 			cinematic:
 			preview:
 			  mode:
@@ -136,6 +149,7 @@ class OnboardingConfigurationTest {
 			first-join:
 			  enabled: true
 			  delay-ticks: 40
+			%s
 			cinematic: onboarding_intro
 			preview:
 			  mode: runway
@@ -148,7 +162,21 @@ class OnboardingConfigurationTest {
 			%s
 			outfits:
 			  - prison
-			""".formatted(presentationConfig());
+			""".formatted(readinessConfig(), presentationConfig());
+
+		assertThrows(IllegalArgumentException.class, () -> OnboardingConfiguration.load(yaml(source)));
+	}
+
+	@Test
+	void waitingRoomLocationIsOnlyRequiredWhenEnabled() {
+		OnboardingConfiguration config = OnboardingConfiguration.load(yaml(carouselConfig()));
+
+		assertTrue(!config.readiness().waitingRoom().enabled());
+	}
+
+	@Test
+	void enabledWaitingRoomRequiresLocation() {
+		String source = carouselConfig().replace("  waiting-room:\n    enabled: false", "  waiting-room:\n    enabled: true");
 
 		assertThrows(IllegalArgumentException.class, () -> OnboardingConfiguration.load(yaml(source)));
 	}
@@ -159,6 +187,7 @@ class OnboardingConfigurationTest {
 			first-join:
 			  enabled: true
 			  delay-ticks: 40
+			%s
 			cinematic: onboarding_intro
 			preview:
 			  mode: carousel
@@ -177,7 +206,7 @@ class OnboardingConfigurationTest {
 			%s
 			outfits:
 			  - prison
-			""".formatted(presentationConfig());
+			""".formatted(readinessConfig(), presentationConfig());
 	}
 
 	private static String runwayConfig() {
@@ -186,6 +215,7 @@ class OnboardingConfigurationTest {
 			first-join:
 			  enabled: true
 			  delay-ticks: 40
+			%s
 			cinematic: onboarding_intro
 			preview:
 			  mode: runway
@@ -198,7 +228,23 @@ class OnboardingConfigurationTest {
 			%s
 			outfits:
 			  - prison
-			""".formatted(presentationConfig());
+			""".formatted(readinessConfig(), presentationConfig());
+	}
+
+	private static String readinessConfig() {
+		return """
+			readiness:
+			  enabled: true
+			  waiting-room:
+			    enabled: false
+			  resource-pack:
+			    enabled: true
+			    require-nexo: true
+			    timeout-ticks: 600
+			  warmup:
+			    enabled: true
+			    timeout-ticks: 1200
+			""";
 	}
 
 	private static String presentationConfig() {

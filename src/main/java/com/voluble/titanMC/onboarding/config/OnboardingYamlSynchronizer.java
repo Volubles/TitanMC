@@ -13,6 +13,13 @@ final class OnboardingYamlSynchronizer {
 	static boolean sync(YamlConfiguration yaml) {
 		Objects.requireNonNull(yaml, "yaml");
 		boolean changed = false;
+		changed |= setMissing(yaml, "readiness.enabled", true);
+		changed |= setMissing(yaml, "readiness.waiting-room.enabled", false);
+		changed |= setMissing(yaml, "readiness.resource-pack.enabled", true);
+		changed |= setMissing(yaml, "readiness.resource-pack.require-nexo", true);
+		changed |= setMissing(yaml, "readiness.resource-pack.timeout-ticks", 600);
+		changed |= setMissing(yaml, "readiness.warmup.enabled", true);
+		changed |= setMissing(yaml, "readiness.warmup.timeout-ticks", 1200);
 		changed |= setMissing(yaml, "presentation.enabled", true);
 		changed |= setMissing(yaml, "presentation.steps", List.of(
 			Map.of(

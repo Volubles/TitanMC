@@ -460,6 +460,10 @@ public final class MessageDefaults {
 	public static final MessageDefinition ONBOARDING_START_FAILED = message(
 		"onboarding.start-failed", MessageType.ERROR, "Onboarding could not start. Check the cinematic configuration."
 	);
+	public static final MessageDefinition ONBOARDING_READINESS_FAILED = message(
+		"onboarding.readiness-failed", MessageType.ERROR,
+		"Onboarding assets could not be prepared. Please rejoin or contact staff."
+	);
 	public static final MessageDefinition ONBOARDING_OUTFIT_SELECTED = message(
 		"onboarding.outfit-selected", MessageType.INFO, "Selected outfit: {{outfit}}"
 	);

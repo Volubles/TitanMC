@@ -2,7 +2,7 @@ name: TitanMC
 version: '1.0-SNAPSHOT'
 main: com.voluble.titanMC.TitanMC
 api-version: '1.21'
-softdepend: [Vault, LuckPerms, WorldEdit, FastAsyncWorldEdit, PlaceholderAPI, SkinsRestorer, packetevents, PacketEvents]
+softdepend: [Vault, LuckPerms, WorldEdit, FastAsyncWorldEdit, PlaceholderAPI, SkinsRestorer, packetevents, PacketEvents, Nexo]
 commands:
   dtools:
     description: Give a donator tool

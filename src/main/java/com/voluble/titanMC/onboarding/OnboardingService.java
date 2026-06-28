@@ -9,6 +9,7 @@ import com.voluble.titanMC.onboarding.config.OnboardingPreviewPoint;
 import com.voluble.titanMC.onboarding.persistence.OnboardingStorage;
 import com.voluble.titanMC.onboarding.presentation.OnboardingPresentationRunner;
 import com.voluble.titanMC.onboarding.preview.OutfitPreview;
+import com.voluble.titanMC.onboarding.readiness.OnboardingReadinessService;
 import com.voluble.titanMC.outfits.OutfitService;
 import com.voluble.titanMC.outfits.config.OutfitConfigurationManager;
 import org.bukkit.Bukkit;
@@ -33,6 +34,7 @@ public final class OnboardingService implements AutoCloseable {
 	private final OutfitService outfits;
 	private final OutfitConfigurationManager outfitConfiguration;
 	private final OutfitPreview preview;
+	private final OnboardingReadinessService readiness;
 	private final OnboardingPresentationRunner presentation;
 	private final PluginMessageService messages;
 	private final Logger logger;
@@ -46,6 +48,7 @@ public final class OnboardingService implements AutoCloseable {
 		OutfitService outfits,
 		OutfitConfigurationManager outfitConfiguration,
 		OutfitPreview preview,
+		OnboardingReadinessService readiness,
 		PluginMessageService messages,
 		Logger logger
 	) {
@@ -56,6 +59,7 @@ public final class OnboardingService implements AutoCloseable {
 		this.outfits = Objects.requireNonNull(outfits, "outfits");
 		this.outfitConfiguration = Objects.requireNonNull(outfitConfiguration, "outfitConfiguration");
 		this.preview = Objects.requireNonNull(preview, "preview");
+		this.readiness = Objects.requireNonNull(readiness, "readiness");
 		this.presentation = new OnboardingPresentationRunner(this.plugin);
 		this.messages = Objects.requireNonNull(messages, "messages");
 		this.logger = Objects.requireNonNull(logger, "logger");
@@ -104,8 +108,23 @@ public final class OnboardingService implements AutoCloseable {
 				return;
 			}
 			Player online = Bukkit.getPlayer(playerId);
-			if (online != null && !completed) start(online);
+			if (online != null && !completed) prepareFirstJoin(online);
 		}));
+	}
+
+	private void prepareFirstJoin(Player player) {
+		OnboardingConfiguration snapshot = configuration.current();
+		readiness.prepare(player, snapshot).whenComplete((result, failure) ->
+			Bukkit.getScheduler().runTask(plugin, () -> {
+				Player online = Bukkit.getPlayer(player.getUniqueId());
+				if (online == null) return;
+				if (failure != null || result == null || !result.ready()) {
+					messages.send(online, MessageDefaults.ONBOARDING_READINESS_FAILED);
+					return;
+				}
+				start(online);
+			})
+		);
 	}
 
 	public void handleInput(Player player, Input input) {
@@ -139,6 +158,7 @@ public final class OnboardingService implements AutoCloseable {
 		for (UUID playerId : java.util.List.copyOf(sessions.keySet())) {
 			stop(playerId, true);
 		}
+		readiness.close();
 		storage.close();
 	}
 }

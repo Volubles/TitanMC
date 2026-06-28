@@ -15,6 +15,7 @@ public record OnboardingConfiguration(
 	boolean enabled,
 	boolean firstJoinEnabled,
 	long firstJoinDelayTicks,
+	OnboardingReadinessConfiguration readiness,
 	CinematicId cinematic,
 	long inputCooldownMillis,
 	OnboardingPreviewMode previewMode,
@@ -24,6 +25,7 @@ public record OnboardingConfiguration(
 ) {
 	public OnboardingConfiguration {
 		Objects.requireNonNull(cinematic, "cinematic");
+		Objects.requireNonNull(readiness, "readiness");
 		Objects.requireNonNull(previewMode, "previewMode");
 		Objects.requireNonNull(previewStage, "previewStage");
 		Objects.requireNonNull(presentation, "presentation");
@@ -36,6 +38,7 @@ public record OnboardingConfiguration(
 	public static OnboardingConfiguration load(FileConfiguration yaml) {
 		ConfigurationSection firstJoin = yaml.getConfigurationSection("first-join");
 		ConfigurationSection input = yaml.getConfigurationSection("input");
+		ConfigurationSection readiness = requiredSection(yaml, "readiness");
 		ConfigurationSection preview = requiredSection(yaml, "preview");
 		ConfigurationSection presentation = requiredSection(yaml, "presentation");
 		OnboardingPreviewMode previewMode = OnboardingPreviewMode.parse(requiredString(preview, "preview.mode"));
@@ -43,6 +46,7 @@ public record OnboardingConfiguration(
 			requiredBoolean(yaml, "enabled"),
 			requiredBoolean(firstJoin, "first-join.enabled"),
 			requiredLong(firstJoin, "first-join.delay-ticks"),
+			OnboardingReadinessConfiguration.load(readiness),
 			CinematicId.of(requiredString(yaml, "cinematic")),
 			requiredLong(input, "input.repeat-cooldown-ms"),
 			previewMode,

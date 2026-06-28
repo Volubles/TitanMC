@@ -34,6 +34,9 @@ repositories {
     maven("https://maven.typewritermc.com/external") {
         name = "typewriterExternal"
     }
+    maven("https://repo.nexomc.com/releases") {
+        name = "nexo"
+    }
 }
 
 dependencies {
@@ -44,6 +47,7 @@ dependencies {
     compileOnly("net.skinsrestorer:skinsrestorer-api:15.10.2")
     compileOnly("com.github.retrooper:packetevents-api:2.11.1")
     compileOnly("com.github.retrooper:packetevents-spigot:2.11.1")
+    compileOnly("com.nexomc:nexo:1.24.0")
 
     // This is installed locally by the MichelleLib Maven project. Its provided
     // dependencies belong to the server, so only MichelleLib itself is shaded.

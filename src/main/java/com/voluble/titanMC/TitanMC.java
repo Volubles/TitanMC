@@ -35,6 +35,12 @@ import com.voluble.titanMC.onboarding.persistence.OnboardingStorage;
 import com.voluble.titanMC.onboarding.preview.EntityLibOutfitPreview;
 import com.voluble.titanMC.onboarding.preview.OutfitPreview;
 import com.voluble.titanMC.onboarding.preview.UnavailableOutfitPreview;
+import com.voluble.titanMC.onboarding.readiness.NexoOnboardingResourcePackSender;
+import com.voluble.titanMC.onboarding.readiness.OnboardingOutfitWarmup;
+import com.voluble.titanMC.onboarding.readiness.OnboardingReadinessService;
+import com.voluble.titanMC.onboarding.readiness.OnboardingResourcePackGate;
+import com.voluble.titanMC.onboarding.readiness.OnboardingResourcePackSender;
+import com.voluble.titanMC.onboarding.readiness.OnboardingWaitingRoom;
 import com.voluble.titanMC.donatortools.DonatorToolsService;
 import com.voluble.titanMC.donatortools.command.DonatorToolsCommandModule;
 import com.voluble.titanMC.donatortools.config.DonatorToolsConfigurationManager;
@@ -503,6 +509,7 @@ public final class TitanMC extends JavaPlugin {
 
 	private boolean initializeOnboarding() {
 		try {
+			OnboardingReadinessService readiness = onboardingReadiness();
 			onboardingService = new OnboardingService(
 				this,
 				onboardingConfiguration,
@@ -511,9 +518,11 @@ public final class TitanMC extends JavaPlugin {
 				outfitService,
 				outfitConfiguration,
 				outfitPreview(),
+				readiness,
 				messages,
 				getLogger()
 			);
+			getServer().getPluginManager().registerEvents(readiness.listener(), this);
 		} catch (java.sql.SQLException exception) {
 			getLogger().severe("Failed to open onboarding storage: " + exception.getMessage());
 			getServer().getPluginManager().disablePlugin(this);
@@ -524,6 +533,25 @@ public final class TitanMC extends JavaPlugin {
 		);
 		getLogger().info("Onboarding ready");
 		return true;
+	}
+
+	private OnboardingReadinessService onboardingReadiness() {
+		return new OnboardingReadinessService(
+			new OnboardingWaitingRoom(),
+			new OnboardingResourcePackGate(this, onboardingResourcePackSender(), getLogger()),
+			new OnboardingOutfitWarmup(this, outfitService),
+			getLogger()
+		);
+	}
+
+	private OnboardingResourcePackSender onboardingResourcePackSender() {
+		if (!getServer().getPluginManager().isPluginEnabled("Nexo")) {
+			if (onboardingConfiguration.current().readiness().resourcePack().enabled()) {
+				getLogger().warning("Nexo is not installed; onboarding resource-pack readiness is unavailable");
+			}
+			return OnboardingResourcePackSender.unavailable();
+		}
+		return new NexoOnboardingResourcePackSender();
 	}
 
 	private OutfitPreview outfitPreview() {

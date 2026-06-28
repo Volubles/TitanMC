@@ -4,6 +4,25 @@ first-join:
   enabled:
   delay-ticks:
 
+readiness:
+  enabled: true
+  waiting-room:
+    enabled: false
+    location:
+      world:
+      x:
+      y:
+      z:
+      yaw:
+      pitch:
+  resource-pack:
+    enabled: true
+    require-nexo: true
+    timeout-ticks: 600
+  warmup:
+    enabled: true
+    timeout-ticks: 1200
+
 cinematic:
 
 preview:
