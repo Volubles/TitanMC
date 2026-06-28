@@ -1,0 +1,41 @@
+Images:
+  dialogue-background:
+    file: dialogue.png
+    is-arrow: false
+    reduction-ratio: 1
+    ascent: 37
+  answer-background:
+    file: answer.png
+    is-arrow: false
+    reduction-ratio: 1
+    ascent: 81
+  character-background:
+    file: character.png
+    is-arrow: false
+    reduction-ratio: 1
+    ascent: 60
+  hand:
+    file: hand.png
+    is-arrow: true
+    reduction-ratio: 1
+    ascent: -1
+  fog:
+    file: fog.png
+    is-arrow: false
+    reduction-ratio: 1
+    ascent: 185
+  name-start:
+    file: name_start.png
+    is-arrow: false
+    reduction-ratio: 1
+    ascent: 43
+  name-mid:
+    file: name_mid.png
+    is-arrow: false
+    reduction-ratio: 1
+    ascent: 43
+  name-end:
+    file: name_end.png
+    is-arrow: false
+    reduction-ratio: 1
+    ascent: 43

@@ -1,0 +1,127 @@
+Settings:
+  typing-speed: 1 # Ticks(Second/20)
+  range: 3
+  effect: Slowness # Slowness / Freeze
+  answer-numbers: true
+  prevent-exit: false
+  prevent-skip: false
+  character-name: true
+  character-image: true
+  background-fog: true
+  npc-focus: true # Not available
+  save-progress: true # Not available
+
+Sounds:
+  typing:
+    id: titanmc_dialogue:titanmc_dialogue.sounds.typing
+    source: MASTER
+    volume: 1.0
+    pitch: 1.0
+  selection:
+    id: titanmc_dialogue:titanmc_dialogue.sounds.selection
+    source: MASTER
+    volume: 1.0
+    pitch: 1.0
+
+Offsets:
+  name: 0
+  name-background: 20
+  dialogue-background: 0
+  dialogue-line: 10
+  answer-background: 140
+  answer-line: 13
+  arrow: -7
+  character: -16
+
+Character:
+  name: Onur
+
+Images:
+  character-background: character-background
+  arrow: hand
+  dialogue-background: dialogue-background
+  answer-background: answer-background
+  name-start: name-start
+  name-mid: name-mid
+  name-end: name-end
+  fog: fog
+
+Colors:
+  name: '#4f4a3e'
+  name-background: '#f8ffe0'
+  dialogue: '#4f4a3e'
+  dialogue-background: '#f8ffe0'
+  answer: '#4f4a3e'
+  answer-background: '#f8ffe0'
+  character-background: '#ffffff'
+  arrow: '#cdff29'
+  selected: '#4f4a3e'
+  fog: '#000000'
+
+Pages:
+  '1a':
+    lines:
+      - 'TitanMC Dialogue is #2d87c3available #4f4a3enow!'
+      - 'Have not you #cdff29bought #4f4a3eit yet?'
+      - 'What are you waiting for?'
+    typing-info-line: 'Right Click To Skip Typing' # Not available
+    steady-info-line: 'Right Click to Change Page' # Not available
+    goto: "1b" # If this is not empty, answers will be disabled.
+    timer: 30 # Not available
+    pre-actions:
+      - msg %player_name% dialoguepreAction1 @console
+    post-actions:
+      - msg %player_name% dialoguepostAction1 @console
+    exit-actions:
+      - msg %player_name% dialogueexitAction1 @console
+  '1b':
+    lines:
+      - 'New features are added almost'
+      - 'every day I think you'
+      - 'shouldn''t miss this'
+      - 'opportunity...'
+    typing-info-line: 'Right Click To Skip Typing'
+    steady-info-line: 'Right Click to Change Page'
+    goto: "" # If this is not empty, answers will be disabled.
+    timer: 30 # Not available
+    pre-actions: {}
+    post-actions: {}
+    exit-actions: {}
+    answers:
+      '1':
+        text: I'm buying it now.
+        goto: ""
+        reply:
+          - '#82d850<3'
+        sound:
+          id: titanmc_dialogue:titanmc_dialogue.sounds.ding
+          source: MASTER
+          volume: 1.0
+          pitch: 1.0
+        actions:
+          - msg %player_name% action1
+      '2':
+        text: Really?
+        goto: ""
+        condition: :titanmc_dialogue.test:==true
+        reply:
+          - '#82d850Yes!!'
+        sound:
+          id: titanmc_dialogue:titanmc_dialogue.sounds.beep
+          source: MASTER
+          volume: 1.0
+          pitch: 1.0
+        actions:
+          - say That's great!! (Player CMD) @delay.5
+      '3':
+        text: Eew, no!
+        goto: ""
+        reply:
+          - '#e52b2bI disagree with you, this plugin is amazing!'
+        sound:
+          id: titanmc_dialogue:titanmc_dialogue.sounds.beep
+          source: MASTER
+          volume: 1.0
+          pitch: 1.0
+        actions:
+          - msg %player_name% action1 @console

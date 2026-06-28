@@ -1,0 +1,8 @@
+namespace: titanmc_dialogue
+typing-speed-ticks: 1
+
+colors:
+  speaker: '#4f4a3e'
+  dialogue: '#4f4a3e'
+  answer: '#4f4a3e'
+  selected-answer: '#4f4a3e'

@@ -25,6 +25,17 @@ import com.voluble.titanMC.managers.ConfigManager;
 import com.voluble.titanMC.donatortools.DonatorToolsService;
 import com.voluble.titanMC.donatortools.command.DonatorToolsCommandModule;
 import com.voluble.titanMC.donatortools.config.DonatorToolsConfigurationManager;
+import com.voluble.titanMC.display.message.DisplayBroadcastService;
+import com.voluble.titanMC.display.dialogue.DialogueDefinition;
+import com.voluble.titanMC.display.dialogue.DialogueDefinitionLoader;
+import com.voluble.titanMC.display.dialogue.DialogueRenderer;
+import com.voluble.titanMC.display.dialogue.DialogueScrollListener;
+import com.voluble.titanMC.display.dialogue.DialogueService;
+import com.voluble.titanMC.display.dialogue.DialogueTheme;
+import com.voluble.titanMC.display.dialogue.DialogueThemeLoader;
+import com.voluble.titanMC.display.dialogue.command.DialogueCommandModule;
+import com.voluble.titanMC.display.dialogue.titan.TitanDialoguePack;
+import com.voluble.titanMC.display.dialogue.titan.TitanDialogueResourcePackService;
 import com.voluble.titanMC.managers.EconomyManager;
 import com.voluble.titanMC.mines.MineManager;
 import com.voluble.titanMC.mines.protection.MineProtectionPolicy;
@@ -105,6 +116,8 @@ public final class TitanMC extends JavaPlugin {
 	private AuctionService auctionService;
 	private ManagedBlockAccessRegistry managedBlockAccess;
 	private CellBaselineCaptureService cellBaselineCapture;
+	private DisplayBroadcastService displayBroadcastService;
+	private DialogueService dialogueService;
 
 	@Override
 	public void onEnable() {
@@ -121,6 +134,18 @@ public final class TitanMC extends JavaPlugin {
 
 		// Initialize menu service
 		menuService = MenuService.create(this);
+		displayBroadcastService = DisplayBroadcastService.create(getServer());
+		TitanDialoguePack dialoguePack = new TitanDialogueResourcePackService(this).generate();
+		getLogger().info("Generated TitanMC dialogue resource pack at " + dialoguePack.outputDirectory());
+		DialogueTheme dialogueTheme = DialogueThemeLoader.titanDefault(this, dialoguePack);
+		DialogueDefinition previewDialogue = DialogueDefinitionLoader.loadBundled(
+			this,
+			"display/dialogue/titan/Dialogues/default_example.yml",
+			"preview",
+			dialogueTheme
+		);
+		dialogueService = new DialogueService(this, new DialogueRenderer());
+		getServer().getPluginManager().registerEvents(new DialogueScrollListener(dialogueService), this);
 
 		// Initialize general config
 		configManager = new ConfigManager(this);
@@ -256,6 +281,7 @@ public final class TitanMC extends JavaPlugin {
 			))
 			.addModule(new AuctionCommandModule(auctionService, rankConfiguration.catalog()))
 			.addModule(new RankCommandModule(rankConfiguration.catalog(), rankService, rankupService))
+			.addModule(new DialogueCommandModule(dialogueService, previewDialogue))
 			.install();
 
 		getLogger().info("TitanMC has been enabled!");
@@ -370,6 +396,7 @@ public final class TitanMC extends JavaPlugin {
 
 	@Override
 	public void onDisable() {
+		if (dialogueService != null) dialogueService.close();
 		if (menuService != null) menuService.shutdown();
 		if (mineScheduler != null) mineScheduler.stop();
 		if (cellLeaseScheduler != null) cellLeaseScheduler.stop();
@@ -414,4 +441,5 @@ public final class TitanMC extends JavaPlugin {
 	public ProtectionService getProtectionService() { return protectionService; }
 	public CellManager getCellManager() { return cellManager; }
 	public RankCatalog getRanks() { return rankConfiguration.catalog(); }
+	public DisplayBroadcastService getDisplayBroadcastService() { return displayBroadcastService; }
 }
