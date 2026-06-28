@@ -1,6 +1,7 @@
 package com.voluble.titanMC.outfits.persistence;
 
 import com.voluble.titanMC.outfits.model.OutfitId;
+import com.voluble.titanMC.outfits.model.OutfitRenderMode;
 import com.voluble.titanMC.outfits.model.SkinModel;
 import com.voluble.titanMC.outfits.skin.SkinPropertyData;
 
@@ -8,15 +9,19 @@ import java.util.Objects;
 
 public record GeneratedOutfitSkin(
 	OutfitId outfitId,
+	OutfitRenderMode renderMode,
 	SkinModel model,
 	String originalSkinHash,
+	String templateHash,
 	SkinPropertyData property,
 	long generatedAtEpochMillis
 ) {
 	public GeneratedOutfitSkin {
 		Objects.requireNonNull(outfitId, "outfitId");
+		Objects.requireNonNull(renderMode, "renderMode");
 		Objects.requireNonNull(model, "model");
 		originalSkinHash = requireText(originalSkinHash, "originalSkinHash");
+		templateHash = requireText(templateHash, "templateHash");
 		Objects.requireNonNull(property, "property");
 		if (generatedAtEpochMillis < 0L) throw new IllegalArgumentException("generatedAtEpochMillis must not be negative");
 	}

@@ -8,15 +8,21 @@ public record OutfitDefinition(
 	OutfitId id,
 	String displayName,
 	List<String> description,
-	Path templatePath,
-	SkinModel model
+	OutfitRenderMode renderMode,
+	Path classicTemplatePath,
+	Path slimTemplatePath
 ) {
 	public OutfitDefinition {
 		Objects.requireNonNull(id, "id");
 		displayName = requireText(displayName, "displayName");
 		description = List.copyOf(Objects.requireNonNull(description, "description"));
-		Objects.requireNonNull(templatePath, "templatePath");
-		Objects.requireNonNull(model, "model");
+		Objects.requireNonNull(renderMode, "renderMode");
+		Objects.requireNonNull(classicTemplatePath, "classicTemplatePath");
+		Objects.requireNonNull(slimTemplatePath, "slimTemplatePath");
+	}
+
+	public Path templatePath(SkinModel model) {
+		return model == SkinModel.SLIM ? slimTemplatePath : classicTemplatePath;
 	}
 
 	private static String requireText(String value, String name) {

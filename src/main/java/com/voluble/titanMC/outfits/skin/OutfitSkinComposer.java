@@ -1,7 +1,5 @@
 package com.voluble.titanMC.outfits.skin;
 
-import com.voluble.titanMC.outfits.model.OutfitDefinition;
-
 import javax.imageio.ImageIO;
 import java.awt.AlphaComposite;
 import java.awt.Composite;
@@ -11,10 +9,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.net.URL;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Objects;
 
@@ -32,13 +30,29 @@ public final class OutfitSkinComposer {
 		.followRedirects(HttpClient.Redirect.NORMAL)
 		.build();
 
-	public byte[] compose(URL originalSkinUrl, OutfitDefinition outfit) throws IOException, InterruptedException {
-		Objects.requireNonNull(originalSkinUrl, "originalSkinUrl");
-		Objects.requireNonNull(outfit, "outfit");
-		BufferedImage original = readRemote(URI.create(originalSkinUrl.toString()));
-		BufferedImage template = ImageIO.read(outfit.templatePath().toFile());
-		if (template == null) throw new IOException("Could not read outfit template: " + outfit.templatePath());
+	public byte[] compose(PlayerSkin originalSkin, Path templatePath) throws IOException, InterruptedException {
+		Objects.requireNonNull(originalSkin, "originalSkin");
+		BufferedImage original = readRemote(URI.create(originalSkin.url().toString()));
+		BufferedImage template = readTemplate(templatePath);
 		BufferedImage result = compose(original, template);
+		return png(result);
+	}
+
+	public byte[] fullSkin(Path templatePath) throws IOException {
+		return png(readTemplate(templatePath));
+	}
+
+	private BufferedImage readTemplate(Path templatePath) throws IOException {
+		Objects.requireNonNull(templatePath, "templatePath");
+		BufferedImage template = ImageIO.read(templatePath.toFile());
+		if (template == null) throw new IOException("Could not read outfit template: " + templatePath);
+		if (template.getWidth() != 64 || template.getHeight() != 64) {
+			throw new IOException("Unsupported outfit template size: " + template.getWidth() + "x" + template.getHeight());
+		}
+		return template;
+	}
+
+	private byte[] png(BufferedImage result) throws IOException {
 		ByteArrayOutputStream output = new ByteArrayOutputStream();
 		ImageIO.write(result, "png", output);
 		return output.toByteArray();

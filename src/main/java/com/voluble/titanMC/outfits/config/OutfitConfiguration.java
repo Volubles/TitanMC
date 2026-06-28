@@ -2,7 +2,7 @@ package com.voluble.titanMC.outfits.config;
 
 import com.voluble.titanMC.outfits.model.OutfitDefinition;
 import com.voluble.titanMC.outfits.model.OutfitId;
-import com.voluble.titanMC.outfits.model.SkinModel;
+import com.voluble.titanMC.outfits.model.OutfitRenderMode;
 import com.voluble.titanMC.outfits.skin.MineSkinVisibility;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -52,13 +52,17 @@ public record OutfitConfiguration(
 		for (String key : section.getKeys(false)) {
 			ConfigurationSection entry = requireSection(section, key);
 			OutfitId id = OutfitId.of(key);
-			String template = requiredString(entry, "template");
+			String legacyTemplate = optionalString(entry, "template").orElse(null);
+			String classicTemplate = optionalString(entry, "classic-template").orElse(legacyTemplate);
+			if (classicTemplate == null) throw new IllegalArgumentException(entry.getCurrentPath() + ".classic-template must be set");
+			String slimTemplate = optionalString(entry, "slim-template").orElse(classicTemplate);
 			OutfitDefinition definition = new OutfitDefinition(
 				id,
 				entry.getString("display-name", id.value()),
 				entry.getStringList("description"),
-				folder.resolve(template).normalize(),
-				SkinModel.parse(entry.getString("model", "CLASSIC"))
+				OutfitRenderMode.parse(entry.getString("render-mode", "composite")),
+				folder.resolve(classicTemplate).normalize(),
+				folder.resolve(slimTemplate).normalize()
 			);
 			definitions.put(id, definition);
 		}
@@ -79,6 +83,11 @@ public record OutfitConfiguration(
 		return value == null || value.isBlank() ? Optional.empty() : Optional.of(value.trim());
 	}
 
+	private static Optional<String> optionalString(ConfigurationSection section, String key) {
+		String value = section.getString(key);
+		return value == null || value.isBlank() ? Optional.empty() : Optional.of(value.trim());
+	}
+
 	private static ConfigurationSection requireSection(FileConfiguration yaml, String path) {
 		ConfigurationSection section = yaml.getConfigurationSection(path);
 		if (section == null) throw new IllegalArgumentException("Missing section: " + path);
@@ -91,9 +100,4 @@ public record OutfitConfiguration(
 		return section;
 	}
 
-	private static String requiredString(ConfigurationSection section, String key) {
-		String value = section.getString(key);
-		if (value == null || value.isBlank()) throw new IllegalArgumentException(section.getCurrentPath() + "." + key + " must be set");
-		return value.trim();
-	}
 }

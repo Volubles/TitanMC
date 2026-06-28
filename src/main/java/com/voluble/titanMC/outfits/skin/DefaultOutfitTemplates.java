@@ -17,6 +17,8 @@ public final class DefaultOutfitTemplates {
 		Files.createDirectories(templates);
 		Path prison = templates.resolve("prison_classic.png");
 		if (Files.notExists(prison)) ImageIO.write(prisonClassic(), "png", prison.toFile());
+		Path prisonSlim = templates.resolve("prison_slim.png");
+		if (Files.notExists(prisonSlim)) ImageIO.write(prisonClassic(), "png", prisonSlim.toFile());
 	}
 
 	private static BufferedImage prisonClassic() {

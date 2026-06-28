@@ -4,10 +4,13 @@ import com.voluble.titanMC.outfits.config.OutfitConfigurationManager;
 import com.voluble.titanMC.outfits.model.OutfitDefinition;
 import com.voluble.titanMC.outfits.model.OutfitId;
 import com.voluble.titanMC.outfits.model.OutfitPreference;
+import com.voluble.titanMC.outfits.model.OutfitRenderMode;
+import com.voluble.titanMC.outfits.model.SkinModel;
 import com.voluble.titanMC.outfits.persistence.GeneratedOutfitSkin;
 import com.voluble.titanMC.outfits.persistence.OutfitStorage;
 import com.voluble.titanMC.outfits.skin.MineSkinClient;
 import com.voluble.titanMC.outfits.skin.OutfitSkinComposer;
+import com.voluble.titanMC.outfits.skin.PlayerSkin;
 import com.voluble.titanMC.outfits.skin.PlayerSkinSource;
 import com.voluble.titanMC.outfits.skin.SkinApplier;
 import com.voluble.titanMC.outfits.skin.SkinHash;
@@ -16,7 +19,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 
-import java.net.URL;
+import java.nio.file.Path;
 import java.sql.SQLException;
 import java.util.Collections;
 import java.util.Set;
@@ -28,6 +31,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public final class OutfitService implements AutoCloseable {
+	private static final UUID SHARED_FULL_SKIN_CACHE_ID = new UUID(0L, 0L);
+
 	private final Plugin plugin;
 	private final OutfitConfigurationManager configuration;
 	private final OutfitStorage storage;
@@ -109,8 +114,8 @@ public final class OutfitService implements AutoCloseable {
 			return;
 		}
 		UUID playerId = player.getUniqueId();
-		URL originalSkin = skinSource.skinUrl(player).orElse(null);
-		if (originalSkin == null) {
+		PlayerSkin originalSkin = skinSource.skin(player).orElse(null);
+		if (originalSkin == null && outfit.renderMode() == OutfitRenderMode.COMPOSITE) {
 			active.remove(playerId);
 			callback.accept(PreparedOutfitSkin.failed(OutfitResult.NO_ORIGINAL_SKIN));
 			return;
@@ -157,21 +162,40 @@ public final class OutfitService implements AutoCloseable {
 		}
 	}
 
-	private SkinPropertyData prepare(UUID playerId, String apiKey, URL originalSkin, OutfitDefinition outfit) {
+	private SkinPropertyData prepare(UUID playerId, String apiKey, PlayerSkin originalSkin, OutfitDefinition outfit) {
 		try {
-			String originalHash = SkinHash.sha256(originalSkin.toString());
-			GeneratedOutfitSkin cached = storage.generatedSkin(playerId, outfit.id(), outfit.model(), originalHash).orElse(null);
+			SkinModel model = originalSkin == null ? SkinModel.CLASSIC : originalSkin.model();
+			Path template = outfit.templatePath(model);
+			String originalHash = originalSkin == null ? "full-skin" : SkinHash.sha256(originalSkin.url().toString());
+			String templateHash = SkinHash.sha256(template);
+			UUID cacheOwner = outfit.renderMode() == OutfitRenderMode.FULL_SKIN ? SHARED_FULL_SKIN_CACHE_ID : playerId;
+			GeneratedOutfitSkin cached = storage.generatedSkin(
+				cacheOwner,
+				outfit.id(),
+				outfit.renderMode(),
+				model,
+				originalHash,
+				templateHash
+			).orElse(null);
 			if (cached != null) return cached.property();
-			byte[] png = composer.compose(originalSkin, outfit);
+			byte[] png = outfit.renderMode() == OutfitRenderMode.FULL_SKIN
+				? composer.fullSkin(template)
+				: composer.compose(originalSkin, template);
 			SkinPropertyData generated = mineSkin.upload(
 				apiKey,
 				outfit.id(),
-				outfit.model(),
+				model,
 				configuration.current().mineSkinVisibility(),
 				png
 			);
-			storage.saveGeneratedSkin(playerId, new GeneratedOutfitSkin(
-				outfit.id(), outfit.model(), originalHash, generated, System.currentTimeMillis()
+			storage.saveGeneratedSkin(cacheOwner, new GeneratedOutfitSkin(
+				outfit.id(),
+				outfit.renderMode(),
+				model,
+				originalHash,
+				templateHash,
+				generated,
+				System.currentTimeMillis()
 			));
 			return generated;
 		} catch (Exception exception) {

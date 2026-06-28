@@ -3,6 +3,7 @@ package com.voluble.titanMC.outfits.persistence;
 import com.voluble.titanMC.outfits.model.OutfitId;
 import com.voluble.titanMC.outfits.model.OutfitMode;
 import com.voluble.titanMC.outfits.model.OutfitPreference;
+import com.voluble.titanMC.outfits.model.OutfitRenderMode;
 import com.voluble.titanMC.outfits.model.SkinModel;
 import com.voluble.titanMC.outfits.skin.SkinPropertyData;
 
@@ -19,7 +20,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 public final class OutfitStorage implements AutoCloseable {
-	private static final int SCHEMA_VERSION = 1;
+	private static final int SCHEMA_VERSION = 2;
 
 	private final Connection connection;
 
@@ -53,6 +54,9 @@ public final class OutfitStorage implements AutoCloseable {
 				version = result.next() ? result.getInt(1) : 0;
 				if (version > SCHEMA_VERSION) throw new SQLException("Unsupported Outfits database schema " + version);
 			}
+			if (version > 0 && version < 2) {
+				statement.executeUpdate("DROP TABLE IF EXISTS generated_outfit_skins");
+			}
 			statement.executeUpdate("""
 				CREATE TABLE IF NOT EXISTS outfit_preferences (
 				    player_uuid TEXT PRIMARY KEY,
@@ -65,12 +69,14 @@ public final class OutfitStorage implements AutoCloseable {
 				CREATE TABLE IF NOT EXISTS generated_outfit_skins (
 				    player_uuid TEXT NOT NULL,
 				    outfit_id TEXT NOT NULL,
+				    render_mode TEXT NOT NULL,
 				    model TEXT NOT NULL,
 				    original_skin_hash TEXT NOT NULL,
+				    template_hash TEXT NOT NULL,
 				    texture_value TEXT NOT NULL,
 				    texture_signature TEXT NOT NULL,
 				    generated_at INTEGER NOT NULL,
-				    PRIMARY KEY(player_uuid, outfit_id, model, original_skin_hash)
+				    PRIMARY KEY(player_uuid, outfit_id, render_mode, model, original_skin_hash, template_hash)
 				)
 				""");
 			statement.execute("PRAGMA user_version = " + SCHEMA_VERSION);
@@ -112,23 +118,29 @@ public final class OutfitStorage implements AutoCloseable {
 	public synchronized Optional<GeneratedOutfitSkin> generatedSkin(
 		UUID playerId,
 		OutfitId outfitId,
+		OutfitRenderMode renderMode,
 		SkinModel model,
-		String originalSkinHash
+		String originalSkinHash,
+		String templateHash
 	) throws SQLException {
 		try (PreparedStatement statement = connection.prepareStatement("""
 			SELECT texture_value, texture_signature, generated_at FROM generated_outfit_skins
-			WHERE player_uuid = ? AND outfit_id = ? AND model = ? AND original_skin_hash = ?
+			WHERE player_uuid = ? AND outfit_id = ? AND render_mode = ? AND model = ? AND original_skin_hash = ? AND template_hash = ?
 			""")) {
 			statement.setString(1, playerId.toString());
 			statement.setString(2, outfitId.value());
-			statement.setString(3, model.name());
-			statement.setString(4, originalSkinHash);
+			statement.setString(3, renderMode.name());
+			statement.setString(4, model.name());
+			statement.setString(5, originalSkinHash);
+			statement.setString(6, templateHash);
 			try (ResultSet result = statement.executeQuery()) {
 				if (!result.next()) return Optional.empty();
 				return Optional.of(new GeneratedOutfitSkin(
 					outfitId,
+					renderMode,
 					model,
 					originalSkinHash,
+					templateHash,
 					new SkinPropertyData(result.getString("texture_value"), result.getString("texture_signature")),
 					result.getLong("generated_at")
 				));
@@ -139,19 +151,21 @@ public final class OutfitStorage implements AutoCloseable {
 	public synchronized void saveGeneratedSkin(UUID playerId, GeneratedOutfitSkin skin) throws SQLException {
 		try (PreparedStatement statement = connection.prepareStatement("""
 			INSERT INTO generated_outfit_skins(
-			    player_uuid, outfit_id, model, original_skin_hash, texture_value, texture_signature, generated_at
-			) VALUES(?,?,?,?,?,?,?) ON CONFLICT(player_uuid, outfit_id, model, original_skin_hash) DO UPDATE SET
+			    player_uuid, outfit_id, render_mode, model, original_skin_hash, template_hash, texture_value, texture_signature, generated_at
+			) VALUES(?,?,?,?,?,?,?,?,?) ON CONFLICT(player_uuid, outfit_id, render_mode, model, original_skin_hash, template_hash) DO UPDATE SET
 			texture_value = excluded.texture_value,
 			texture_signature = excluded.texture_signature,
 			generated_at = excluded.generated_at
 			""")) {
 			statement.setString(1, playerId.toString());
 			statement.setString(2, skin.outfitId().value());
-			statement.setString(3, skin.model().name());
-			statement.setString(4, skin.originalSkinHash());
-			statement.setString(5, skin.property().value());
-			statement.setString(6, skin.property().signature());
-			statement.setLong(7, skin.generatedAtEpochMillis());
+			statement.setString(3, skin.renderMode().name());
+			statement.setString(4, skin.model().name());
+			statement.setString(5, skin.originalSkinHash());
+			statement.setString(6, skin.templateHash());
+			statement.setString(7, skin.property().value());
+			statement.setString(8, skin.property().signature());
+			statement.setLong(9, skin.generatedAtEpochMillis());
 			statement.executeUpdate();
 		}
 	}
